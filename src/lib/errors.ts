@@ -54,10 +54,10 @@ export function fromSupabaseError(error: unknown, fallback = 'No se pudo complet
 }
 
 /** Envuelve una respuesta `{ data, error }` de supabase-js. */
-export function unwrap<T>(result: { data: T | null; error: unknown }, notFoundMessage?: string): T {
+export function unwrap<T>(result: { data: T; error: unknown }, notFoundMessage?: string): NonNullable<T> {
   if (result.error) throw fromSupabaseError(result.error)
   if (result.data === null || result.data === undefined) {
     throw new AppError('NOT_FOUND', notFoundMessage ?? 'No se encontró el registro.')
   }
-  return result.data
+  return result.data as NonNullable<T>
 }

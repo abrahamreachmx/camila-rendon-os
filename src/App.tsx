@@ -13,6 +13,7 @@ const HomePage = lazy(() => import('@/routes/home/HomePage'))
 const CampaignsPage = lazy(() => import('@/routes/campaigns/CampaignsPage'))
 const PaymentsPage = lazy(() => import('@/routes/payments/PaymentsPage'))
 const CompaniesPage = lazy(() => import('@/routes/companies/CompaniesPage'))
+const CompanyDetailPage = lazy(() => import('@/routes/companies/CompanyDetailPage'))
 const GiftingPage = lazy(() => import('@/routes/gifting/GiftingPage'))
 const ReportsPage = lazy(() => import('@/routes/reports/ReportsPage'))
 const SettingsPage = lazy(() => import('@/routes/settings/SettingsPage'))
@@ -42,6 +43,7 @@ export default function App() {
                 <Route path="campanas" element={<CampaignsPage />} />
                 <Route path="cobros" element={<PaymentsPage />} />
                 <Route path="marcas" element={<CompaniesPage />} />
+                <Route path="marcas/:id" element={<CompanyDetailPage />} />
                 <Route path="gifting" element={<GiftingPage />} />
                 <Route path="reportes" element={<ReportsPage />} />
                 <Route path="configuracion" element={<SettingsPage />} />
