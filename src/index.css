@@ -1,1 +1,184 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Fuentes locales, licencia OFL (ver licenses/). Variables: un solo archivo cubre 400-600/700. */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('./fonts/fraunces-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('./fonts/fraunces-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/instrument-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/instrument-sans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@theme inline {
+  /* Tipografia (BLUEPRINT.md §7) */
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-heading: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-serif: var(--font-heading);
+
+  /* Paleta de marca */
+  --color-canvas: #F7F2EC;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #EFE7DE;
+  --color-ink: #2A2320;
+  --color-ink-muted: #8B8079;
+  --color-line: #E3D9CE;
+  --color-plum: #6B2D4F;
+  --color-plum-hover: #55233F;
+  --color-sage: #7E9276;
+  --color-pending: #C08A2E;
+  --color-paid: #3E7C5A;
+  --color-overdue: #B4433B;
+  --color-info: #3F5F8A;
+
+  /* Puentes a los tokens que consumen los componentes de shadcn */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  /* Radios: 6 px controles, 10 px paneles, 999 px badges */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --radius: 0.625rem; /* 10 px paneles; --radius-sm queda en 6 px para controles */
+
+  --background: #F7F2EC;
+  --foreground: #2A2320;
+  --card: #FFFFFF;
+  --card-foreground: #2A2320;
+  --popover: #FFFFFF;
+  --popover-foreground: #2A2320;
+  --primary: #6B2D4F;
+  --primary-foreground: #FFFFFF;
+  --secondary: #EFE7DE;
+  --secondary-foreground: #2A2320;
+  --muted: #EFE7DE;
+  --muted-foreground: #8B8079;
+  --accent: #EFE7DE;
+  --accent-foreground: #2A2320;
+  --destructive: #B4433B;
+  --border: #E3D9CE;
+  --input: #E3D9CE;
+  --ring: #6B2D4F;
+
+  /* Graficas de Reportes: mora, salvia, ambar, verde, azul */
+  --chart-1: #6B2D4F;
+  --chart-2: #7E9276;
+  --chart-3: #C08A2E;
+  --chart-4: #3E7C5A;
+  --chart-5: #3F5F8A;
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #2A2320;
+  --sidebar-primary: #6B2D4F;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EFE7DE;
+  --sidebar-accent-foreground: #2A2320;
+  --sidebar-border: #E3D9CE;
+  --sidebar-ring: #6B2D4F;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2 {
+    @apply font-heading;
+    font-weight: 500;
+  }
+
+  /* Cifras siempre alineadas: importes, fechas y totales */
+  table, .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+}
+
+/* Solo se mueve lo que responde a una accion del usuario */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

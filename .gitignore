@@ -34,3 +34,6 @@ pnpm-debug.log*
 # Supabase CLI
 supabase/.branches
 supabase/.temp
+
+# Password de la BD (solo local)
+.db-password.local
