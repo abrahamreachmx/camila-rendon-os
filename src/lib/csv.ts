@@ -1,3 +1,5 @@
+import { triggerDownload } from '@/pdf/downloadPdf'
+
 /** BOM UTF-8: sin esto Excel en Windows abre "Campaña" como "CampaÃ±a". */
 const BOM = '﻿'
 
@@ -17,10 +19,5 @@ export function toCsv<T>(rows: readonly T[], columns: readonly CsvColumn<T>[]): 
 
 export function downloadCsv(filename: string, content: string): void {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.click()
-  URL.revokeObjectURL(url)
+  triggerDownload(blob, filename)
 }
