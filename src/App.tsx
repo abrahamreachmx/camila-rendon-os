@@ -11,6 +11,8 @@ import LoginPage from '@/routes/login/LoginPage'
 
 const HomePage = lazy(() => import('@/routes/home/HomePage'))
 const CampaignsPage = lazy(() => import('@/routes/campaigns/CampaignsPage'))
+const CampaignNewPage = lazy(() => import('@/routes/campaigns/CampaignNewPage'))
+const CampaignDetailPage = lazy(() => import('@/routes/campaigns/CampaignDetailPage'))
 const PaymentsPage = lazy(() => import('@/routes/payments/PaymentsPage'))
 const CompaniesPage = lazy(() => import('@/routes/companies/CompaniesPage'))
 const CompanyDetailPage = lazy(() => import('@/routes/companies/CompanyDetailPage'))
@@ -41,6 +43,8 @@ export default function App() {
               >
                 <Route index element={<HomePage />} />
                 <Route path="campanas" element={<CampaignsPage />} />
+                <Route path="campanas/nueva" element={<CampaignNewPage />} />
+                <Route path="campanas/:id" element={<CampaignDetailPage />} />
                 <Route path="cobros" element={<PaymentsPage />} />
                 <Route path="marcas" element={<CompaniesPage />} />
                 <Route path="marcas/:id" element={<CompanyDetailPage />} />
