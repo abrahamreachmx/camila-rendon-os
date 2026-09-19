@@ -5,6 +5,7 @@ export type AppErrorCode =
   | 'CONFLICT'
   | 'AUTH'
   | 'STORAGE'
+  | 'TRANSIENT'
   | 'UNKNOWN'
 
 export class AppError extends Error {
@@ -44,6 +45,14 @@ export function fromSupabaseError(error: unknown, fallback = 'No se pudo complet
   if (code === 'PGRST116') {
     return new AppError('NOT_FOUND', 'No se encontró el registro.', { cause: error })
   }
+  // Supabase firma el token con el reloj del servidor de Auth y PostgREST lo
+  // valida con el suyo. Un desfase de milisegundos hace que el primer par de
+  // peticiones tras entrar rebote con "JWT issued at future". Se resuelve solo
+  // al reintentar, así que se marca como transitorio en vez de sacarle un error
+  // a Ana por algo que no pasó.
+  if (code === 'PGRST303') {
+    return new AppError('TRANSIENT', 'La sesión se está sincronizando. Reintentando…', { cause: error })
+  }
   if (status === 401 || status === 403 || code === '42501') {
     return new AppError('AUTH', 'Tu sesión expiró. Vuelve a entrar.', { cause: error })
   }
@@ -51,6 +60,11 @@ export function fromSupabaseError(error: unknown, fallback = 'No se pudo complet
   const message = typeof e.message === 'string' && e.message.length > 0 ? e.message : fallback
   console.error('[AppError:UNKNOWN]', error)
   return new AppError('UNKNOWN', message, { cause: error })
+}
+
+/** Errores que vale la pena reintentar en vez de mostrar. */
+export function isTransient(error: unknown): boolean {
+  return error instanceof AppError && error.code === 'TRANSIENT'
 }
 
 /** Envuelve una respuesta `{ data, error }` de supabase-js. */
