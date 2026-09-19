@@ -50,6 +50,10 @@ Componente → hook de TanStack Query → `lib/api/*` → supabase-js → Postgr
 - Los reportes son una llamada al RPC `report_summary(from, to)`; el cliente no agrega en JS.
 - Los PDF se generan en el navegador; nunca se envían datos a terceros.
 - Errores: `AppError { code, message }` con mensaje en español para el toast (`src/lib/errors.ts`).
+- **Acceso: tener sesión no basta.** Las políticas RLS exigen estar en `app_users`
+  (migración 0005). Un desconocido que se registre queda `authenticated` pero ve
+  cero filas y no puede escribir. Dar de alta a alguien:
+  `insert into app_users (user_id, email) select id, email from auth.users where email = '…';`
 - "Vencido" no se guarda: es `status <> 'pagado' and due_date < hoy`, calculado en consulta.
 
 ## Reglas de organización
@@ -91,7 +95,9 @@ En el código son tokens de Tailwind: `canvas`, `surface`, `surface-2`, `ink`, `
 
 1. UI 100 % en español, sentence case, sin emojis; código e identificadores en inglés.
 2. Nunca usar la `sb_secret_` en frontend ni en GitHub Actions. Sign-up público siempre deshabilitado.
-3. Toda tabla nueva lleva `id uuid`, `created_at`, `updated_at`, RLS habilitada y política `authenticated`.
+3. Toda tabla nueva lleva `id uuid`, `created_at`, `updated_at`, RLS habilitada y
+   política `for all to authenticated using ((select is_app_user()))`. Nunca
+   `using (true)`: eso abriría la tabla a cualquiera que se registre.
 4. Ninguna dependencia de pago ni servicio con suscripción. Si algo lo requiere, se descarta.
 5. Los PDF y los reportes deben poder regenerarse desde su snapshot aunque los datos originales cambien.
 6. No hacer commit de `.env*` salvo `.env.example`.

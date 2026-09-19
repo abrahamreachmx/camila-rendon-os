@@ -39,5 +39,20 @@ Push a `main` → GitHub Actions corre lint, pruebas y build, y publica `dist/` 
 Un segundo workflow llama al RPC `ping()` cada 3 días para que Supabase Free no pause el proyecto.
 
 Secretos que espera el repo: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_APP_URL`.
-Nunca la llave secreta de Supabase: esta app corre entera en el navegador y la seguridad
-la dan las políticas RLS más el registro público deshabilitado.
+Nunca la llave secreta de Supabase: esta app corre entera en el navegador.
+
+## Quién puede entrar
+
+Dos capas, a propósito:
+
+1. El registro público de Supabase está deshabilitado.
+2. Las políticas RLS no se conforman con que haya sesión: exigen que el usuario esté
+   en la tabla `app_users`. Si el primer candado se abriera por error, quien se registre
+   obtiene sesión pero no ve una sola fila.
+
+Para dar acceso a alguien más, desde el SQL editor de Supabase:
+
+```sql
+insert into app_users (user_id, email)
+select id, email from auth.users where email = 'persona@ejemplo.com';
+```
