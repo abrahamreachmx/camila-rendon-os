@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router'
+import { EmptyState } from '@/components/data/EmptyState'
 import { PAYMENT_STATUS_STYLE } from '@/components/data/StatusBadge'
+import { Button } from '@/components/ui/button'
 import { diffDaysIso, formatDateShort, type IsoDate } from '@/lib/dates'
-import { formatMoney, formatMoneyShort, round2, type Currency } from '@/lib/money'
+import { formatMoneyShort, round2, type Currency } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import type { PaymentStatus, PaymentWithCampaign } from '@/types'
 
@@ -49,9 +51,14 @@ export function PaymentTimeline({
 
   if (rows.length === 0 && overdue.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-line px-6 py-12 text-center text-ink-muted">
-        No hay cobros programados en los próximos 90 días.
-      </div>
+      <EmptyState
+        message="No hay cobros programados en los próximos 90 días."
+        action={
+          <Button asChild variant="outline">
+            <Link to="/campanas/nueva">Nueva campaña</Link>
+          </Button>
+        }
+      />
     )
   }
 
@@ -178,13 +185,4 @@ function addDays(iso: IsoDate, days: number): IsoDate {
   const [y, m, d] = iso.split('-').map(Number)
   const date = new Date(y, m - 1, d + days)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
-export function timelineTotal(payments: PaymentWithCampaign[], currency: Currency): string {
-  const total = round2(
-    payments
-      .filter((payment) => payment.campaign.currency === currency)
-      .reduce((acc, payment) => acc + Number(payment.amount), 0),
-  )
-  return formatMoney(total, currency)
 }

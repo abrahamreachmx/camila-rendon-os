@@ -1,7 +1,6 @@
-import { PDFViewer } from '@react-pdf/renderer'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Download, FileDown, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { toast } from 'sonner'
 import { EmptyState } from '@/components/data/EmptyState'
 import { MoneyCell } from '@/components/data/MoneyCell'
@@ -21,8 +20,10 @@ import { createQuote, deleteQuote, readQuoteItems } from '@/lib/api/quotes'
 import { getSettings, readPresets } from '@/lib/api/settings'
 import { formatDateLong } from '@/lib/dates'
 import type { Currency } from '@/lib/money'
-import { downloadOrShare, toPdfBlob } from '@/pdf/downloadPdf'
-import { QuotePdf, type QuotePdfData } from '@/pdf/QuotePdf'
+import type { QuotePdfData } from '@/pdf/QuotePdf'
+
+// react-pdf pesa ~1.2 MB: sólo se descarga si Ana abre o baja una cotización.
+const QuotePreview = lazy(() => import('@/pdf/QuotePreview'))
 import type { CampaignWithRelations, Quote } from '@/types'
 
 export function CampaignQuoteTab({
@@ -92,6 +93,10 @@ export function CampaignQuoteTab({
     const data = buildData(quote)
     if (!data) return
     try {
+      const [{ downloadOrShare, toPdfBlob }, { QuotePdf }] = await Promise.all([
+        import('@/pdf/downloadPdf'),
+        import('@/pdf/QuotePdf'),
+      ])
       const blob = await toPdfBlob(<QuotePdf data={data} />)
       await downloadOrShare(blob, `${quote.folio}.pdf`)
     } catch (error) {
@@ -186,12 +191,15 @@ export function CampaignQuoteTab({
           {dialog.mode === 'preview' && (
             <>
               {previewData && (
-                <PDFViewer
-                  style={{ width: '100%', height: '70vh', border: 'none' }}
-                  showToolbar={false}
+                <Suspense
+                  fallback={
+                    <div className="flex h-[70vh] items-center justify-center text-ink-muted">
+                      Preparando el PDF…
+                    </div>
+                  }
                 >
-                  <QuotePdf data={previewData} />
-                </PDFViewer>
+                  <QuotePreview data={previewData} />
+                </Suspense>
               )}
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDialog({ mode: 'closed' })}>Cerrar</Button>

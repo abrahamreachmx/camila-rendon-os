@@ -1,0 +1,24 @@
+# Supabase Free pausa un proyecto tras 7 días sin tráfico. Esto lo toca cada 3.
+# Usa la llave publicable, que es pública por diseño; nunca la secreta.
+name: Keep-alive
+
+on:
+  schedule:
+    - cron: '0 12 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al RPC ping()
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          curl -sS -f -X POST "$SUPABASE_URL/rest/v1/rpc/ping" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}' | tee /dev/stderr | grep -q '"ok"'
+          echo "Supabase respondió ok."

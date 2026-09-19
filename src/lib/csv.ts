@@ -1,4 +1,4 @@
-import { triggerDownload } from '@/pdf/downloadPdf'
+import { triggerDownload } from '@/lib/download'
 
 /** BOM UTF-8: sin esto Excel en Windows abre "Campaña" como "CampaÃ±a". */
 const BOM = '﻿'

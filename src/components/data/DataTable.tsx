@@ -70,6 +70,15 @@ export function DataTable<T>({
                 <th
                   key={column.key}
                   scope="col"
+                  aria-sort={
+                    sortable
+                      ? active
+                        ? sort!.direction === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : 'none'
+                      : undefined
+                  }
                   style={column.width ? { width: column.width } : undefined}
                   className={cn(
                     'px-3 py-2.5 text-[13px] font-semibold text-ink',
@@ -81,7 +90,6 @@ export function DataTable<T>({
                     <button
                       type="button"
                       onClick={() => toggleSort(column.key)}
-                      aria-sort={active ? (sort!.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
                       className={cn(
                         'inline-flex items-center gap-1 rounded-sm hover:text-plum',
                         column.align === 'right' && 'flex-row-reverse',

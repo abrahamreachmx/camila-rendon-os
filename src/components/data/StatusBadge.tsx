@@ -1,3 +1,4 @@
+import { readableTextColor } from '@/lib/contrast'
 import { cn } from '@/lib/utils'
 
 /** Punto sólido + fondo del color al 12 %, según el §7 del blueprint. */
@@ -10,13 +11,17 @@ export function StatusBadge({
   color: string
   className?: string
 }) {
+  // El fondo y el punto conservan el color elegido; sólo el texto se oscurece
+  // lo necesario para ser legible sobre ese mismo tinte.
+  const textColor = readableTextColor(color)
+
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[13px] whitespace-nowrap',
         className,
       )}
-      style={{ backgroundColor: `${color}1F`, color }}
+      style={{ backgroundColor: `${color}1F`, color: textColor }}
     >
       <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color }} aria-hidden />
       {label}

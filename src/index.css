@@ -47,7 +47,10 @@
   --color-surface: #FFFFFF;
   --color-surface-2: #EFE7DE;
   --color-ink: #2A2320;
-  --color-ink-muted: #8B8079;
+  /* El §7 pide #8B8079, pero da 3.45:1 sobre el fondo y AA exige 4.5:1 para
+     texto. Este es el valor más claro del mismo matiz que pasa en fondo,
+     superficie y superficie 2. #8B8079 sigue vivo como color de estatus. */
+  --color-ink-muted: #6F655F;
   --color-line: #E3D9CE;
   --color-plum: #6B2D4F;
   --color-plum-hover: #55233F;
@@ -114,7 +117,7 @@
   --secondary: #EFE7DE;
   --secondary-foreground: #2A2320;
   --muted: #EFE7DE;
-  --muted-foreground: #8B8079;
+  --muted-foreground: #6F655F;
   --accent: #EFE7DE;
   --accent-foreground: #2A2320;
   --destructive: #B4433B;

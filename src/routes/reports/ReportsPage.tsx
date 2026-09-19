@@ -18,8 +18,6 @@ import { downloadCsv, toCsv, type CsvColumn } from '@/lib/csv'
 import { formatDateLong, formatDateShort } from '@/lib/dates'
 import { formatMoney, toMxn, type Currency } from '@/lib/money'
 import { currentMonth, previousRange, type PeriodRange } from '@/lib/periods'
-import { downloadOrShare, toPdfBlob } from '@/pdf/downloadPdf'
-import { ReportPdf } from '@/pdf/ReportPdf'
 import { KpiGrid } from '@/routes/reports/KpiGrid'
 import { PeriodPicker } from '@/routes/reports/PeriodPicker'
 import { CollectionsChart, MonthlySalesChart, TopCompaniesChart } from '@/routes/reports/ReportCharts'
@@ -105,6 +103,11 @@ export default function ReportsPage() {
   async function exportPdf() {
     if (!summary || !settings) return
     try {
+      // Igual que en la cotización: react-pdf sólo baja si se pide el PDF.
+      const [{ downloadOrShare, toPdfBlob }, { ReportPdf }] = await Promise.all([
+        import('@/pdf/downloadPdf'),
+        import('@/pdf/ReportPdf'),
+      ])
       const blob = await toPdfBlob(
         <ReportPdf
           data={{

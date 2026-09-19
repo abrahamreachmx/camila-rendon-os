@@ -207,6 +207,13 @@ export default function PaymentsPage() {
                       ? 'Ningún cobro con ese estatus en este mes.'
                       : 'No hay cobros programados en este mes.'
                 }
+                action={
+                  showingOverdue || statusFilter ? undefined : (
+                    <Button variant="outline" onClick={() => void navigate('/campanas/nueva')}>
+                      Nueva campaña
+                    </Button>
+                  )
+                }
               />
             }
           />

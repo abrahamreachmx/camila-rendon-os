@@ -1,4 +1,12 @@
 import type { ReactNode } from 'react'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
+
+/** Extrae texto plano de un título que puede venir como JSX. */
+function toPlainText(node: ReactNode): string | null {
+  if (typeof node === 'string') return node
+  if (typeof node === 'number') return String(node)
+  return null
+}
 
 export function PageHeader({
   title,
@@ -9,6 +17,8 @@ export function PageHeader({
   description?: ReactNode
   actions?: ReactNode
 }) {
+  useDocumentTitle(toPlainText(title))
+
   return (
     <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
       <div className="min-w-0">
