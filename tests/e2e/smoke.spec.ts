@@ -3,7 +3,9 @@ import { expect, test } from '@playwright/test'
 const EMAIL = process.env.E2E_EMAIL ?? ''
 const PASSWORD = process.env.E2E_PASSWORD ?? ''
 
-const CAMPAIGN = 'E2E · Campaña de prueba'
+// Nombre único por corrida: si una corrida anterior falló a medias y dejó su
+// campaña, la siguiente no debe chocar con ella ni borrar la equivocada.
+const CAMPAIGN = `E2E · Campaña de prueba ${Date.now()}`
 
 test.skip(!EMAIL || !PASSWORD, 'Faltan E2E_EMAIL y E2E_PASSWORD')
 
