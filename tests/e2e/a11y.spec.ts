@@ -8,6 +8,15 @@ test.skip(!EMAIL || !PASSWORD, 'Faltan E2E_EMAIL y E2E_PASSWORD')
 
 async function signIn(page: Page, path: string) {
   await page.goto(path)
+
+  // Sin las llaves de Supabase la app muestra ConfigScreen, que no tiene
+  // violaciones porque no tiene nada: la prueba pasaría auditando la página
+  // equivocada. Mejor romper aquí y decir por qué.
+  await expect(
+    page.getByRole('heading', { name: 'Falta configurar Supabase' }),
+    'La app arrancó sin VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY',
+  ).toHaveCount(0)
+
   if (page.url().includes('/login')) {
     await page.fill('#email', EMAIL)
     await page.fill('#password', PASSWORD)
@@ -48,6 +57,7 @@ for (const { path, name } of PAGES) {
 
 test('login sin violaciones de accesibilidad', async ({ page }) => {
   await page.goto('/login')
+  await expect(page.locator('#email')).toBeVisible()
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()

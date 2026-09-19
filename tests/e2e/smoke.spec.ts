@@ -14,6 +14,12 @@ test.skip(!EMAIL || !PASSWORD, 'Faltan E2E_EMAIL y E2E_PASSWORD')
 test('login, nueva campaña, plan 50/50 y aparición en Inicio', async ({ page }) => {
   await page.goto('/campanas')
 
+  await expect(
+    page.getByRole('heading', { name: 'Falta configurar Supabase' }),
+    'La app arrancó sin las llaves de Supabase',
+  ).toHaveCount(0)
+  await expect(page.locator('#email')).toBeVisible()
+
   await page.fill('#email', EMAIL)
   await page.fill('#password', PASSWORD)
   await page.click('button[type=submit]')

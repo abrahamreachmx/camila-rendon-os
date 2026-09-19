@@ -47,8 +47,14 @@ jobs:
 
       # Corre contra el build recién hecho y contra la base real. El smoke crea
       # una campaña y la borra al final; si falla, el deploy no ocurre.
+      # El servidor que levanta Playwright lee las VITE_* igual que el build:
+      # sin ellas la app muestra la pantalla de configuración y las pruebas
+      # auditarían una página vacía.
       - name: Smoke E2E y accesibilidad
         env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_APP_URL: ${{ secrets.VITE_APP_URL }}
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
         run: pnpm test:e2e
