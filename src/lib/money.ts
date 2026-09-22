@@ -5,7 +5,7 @@
  * - los montos viven en la moneda de la campaña; `toMxn` consolida
  */
 
-export const CURRENCIES = ['MXN', 'USD', 'COP'] as const
+export const CURRENCIES = ['MXN', 'USD', 'COP', 'EUR'] as const
 export type Currency = (typeof CURRENCIES)[number]
 
 /** Redondeo a 2 decimales, estable para los errores binarios típicos (1.005 → 1.01). */

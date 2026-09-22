@@ -1,3 +1,9 @@
+-- =====================================================================
+-- ATENCIÓN: este archivo BORRA TODAS LAS TABLAS antes de insertar.
+-- Desde la carga de los datos reales (septiembre 2026) correrlo contra la
+-- base de producción destruye la operación de Camila. Úsalo sólo para
+-- levantar un entorno limpio de pruebas.
+-- =====================================================================
 -- Datos demo (BLUEPRINT.md §4). Re-ejecutable: limpia y vuelve a insertar.
 -- Fecha de referencia del set: 18 de septiembre de 2026.
 -- No crea usuarios de auth; la usuaria Ana se crea aparte.

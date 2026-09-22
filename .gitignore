@@ -37,3 +37,7 @@ supabase/.temp
 
 # Password de la BD (solo local)
 .db-password.local
+
+# Datos reales: el repo es público, nunca versionar información de clientes
+*.csv
+supabase/carga-*.sql
