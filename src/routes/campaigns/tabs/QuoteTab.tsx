@@ -24,6 +24,7 @@ import type { QuotePdfData } from '@/pdf/QuotePdf'
 
 // react-pdf pesa ~1.2 MB: sólo se descarga si Ana abre o baja una cotización.
 const QuotePreview = lazy(() => import('@/pdf/QuotePreview'))
+import { CampaignServicesTab } from '@/routes/campaigns/tabs/ServicesTab'
 import type { CampaignWithRelations, Quote } from '@/types'
 
 export function CampaignQuoteTab({
@@ -108,18 +109,28 @@ export function CampaignQuoteTab({
   const previewData = previewQuote ? buildData(previewQuote) : null
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13px] text-ink-muted">
-          Al cotizar se congelan los servicios: editar la campaña después no cambia una cotización ya emitida.
+    <div className="space-y-8">
+      <section>
+        <h2 className="mb-1 font-heading text-[20px]">Servicios</h2>
+        <p className="mb-4 text-[13px] text-ink-muted">
+          El desglose que se cotiza y del que sale el monto bruto de la campaña.
         </p>
-        <Button onClick={() => setDialog({ mode: 'form' })} disabled={campaign.items.length === 0}>
-          <FileDown className="size-4" /> Nueva cotización
-        </Button>
-      </div>
+        <CampaignServicesTab campaign={campaign} onSaved={onSaved} />
+      </section>
+
+      <section className="border-t border-line pt-8">
+        <h2 className="mb-1 font-heading text-[20px]">Cotizaciones</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[13px] text-ink-muted">
+            Al cotizar se congelan los servicios de arriba: editarlos después no cambia una cotización ya emitida.
+          </p>
+          <Button onClick={() => setDialog({ mode: 'form' })} disabled={campaign.items.length === 0}>
+            <FileDown className="size-4" /> Nueva cotización
+          </Button>
+        </div>
 
       {campaign.quotes.length === 0 ? (
-        <EmptyState message="Aún no hay cotizaciones. Genera la primera desde los servicios de la campaña." />
+        <EmptyState message="Aún no hay cotizaciones. Agrega servicios arriba y genera la primera." />
       ) : (
         <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
           {campaign.quotes.map((quote) => (
@@ -148,6 +159,7 @@ export function CampaignQuoteTab({
           ))}
         </ul>
       )}
+      </section>
 
       <Dialog
         open={dialog.mode !== 'closed'}

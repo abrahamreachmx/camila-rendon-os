@@ -80,8 +80,8 @@ camila-rendon-os/
     index.css                 # @import "tailwindcss" + @theme con los tokens del §7
     routes/
       login/LoginPage.tsx
-      home/HomePage.tsx                   # Inicio: Línea de cobros + KPIs
-      home/PaymentTimeline.tsx            # el componente hero
+      home/HomePage.tsx                   # Inicio: calendario de cobros + KPIs + metas
+      home/GoalProgressPanel.tsx          # avance mensual y trimestral contra la meta
       campaigns/CampaignsPage.tsx         # lista + filtros
       campaigns/CampaignNewPage.tsx
       campaigns/CampaignDetailPage.tsx    # pestañas
@@ -756,22 +756,22 @@ No hay servidor propio. La "API" son módulos en `src/lib/api/*.ts` que envuelve
 | Ruta | Página | Qué ve Ana |
 |------|--------|-----------|
 | `/login` | LoginPage | Correo + contraseña. Enlace "Olvidé mi contraseña" → `resetPasswordForEmail`. |
-| `/` | HomePage | **Línea de cobros** (próximos 90 días), tarjetas: cobros vencidos, por cobrar este mes, comisiones pendientes; listas: entregas próximas (content_due_date ≤ 14 días), publicaciones próximas, campañas en aprobación. |
-| `/campanas` | CampaignsPage | Tabla: marca, campaña, estatus, moneda, bruto, neto, publicación, contrato, comisión pagada. Filtros por estatus, marca, moneda y búsqueda. Botón "Nueva campaña". |
+| `/` | HomePage | **Calendario de cobros** del mes en curso, navegable mes a mes, con la moneda de cada pago; aviso de vencidos de meses anteriores; tarjetas: cobros vencidos, por cobrar este mes, comisiones pendientes; **avance contra la meta** del mes y del trimestre; listas: entregas próximas (content_due_date ≤ 14 días), publicaciones próximas, campañas en aprobación. |
+| `/campanas` | CampaignsPage | Tabla: marca, campaña, estatus, **cobro**, moneda, bruto, neto, publicación, contrato, comisión pagada. El **nombre y el estatus se editan desde la tabla**. La columna de cobro resume el plan de pagos (sin plan, pendiente, en proceso, parcial con su porcentaje, pagado, vencido) y ordena por urgencia. Filtros por estatus, marca, moneda y búsqueda. Botón "Nueva campaña". |
 | `/campanas/nueva` | CampaignNewPage | Formulario en 3 bloques: Marca y datos · Servicios (desglose con totales en vivo) · Plan de pagos (preset o manual). |
-| `/campanas/:id` | CampaignDetailPage | Encabezado con nombre, marca, estatus editable inline, totales, comisión. Pestañas: Resumen (brief, notas, fechas, checkboxes producido / contrato / comisión pagada) · Servicios · Pagos · Facturas · Cotización. |
+| `/campanas/:id` | CampaignDetailPage | Encabezado con nombre, marca, estatus editable inline, totales, comisión. Pestañas: Resumen (brief, notas, fechas, checkboxes producido / contrato / comisión pagada) · **Cotización (servicios arriba, cotizaciones emitidas abajo)** · Pagos · Facturas. |
 | `/cobros` | PaymentsPage | Calendario mensual con montos por día + lista filtrable (pendiente, en proceso, pagado, vencido). Cambiar estatus desde la fila. |
 | `/marcas` | CompaniesPage | Tabla por etapa (prospecto / negociando / cliente), búsqueda. |
 | `/marcas/:id` | CompanyDetailPage | Datos, contactos (CRUD inline), campañas de la marca, gifting de la marca. |
 | `/gifting` | GiftingPage | Tabla + diálogo de alta/edición. Ligas de rastreo clicables. |
 | `/reportes` | ReportsPage | Selector: Mes / Trimestre / Rango + navegación anterior/siguiente. KPIs con delta vs periodo anterior. 3 gráficas. Tablas top marcas y top servicios. Botones: Exportar PDF, Exportar CSV, Guardar reporte. Lista de reportes guardados. |
-| `/configuracion` | SettingsPage | Pestañas: Tarifas (catálogo reordenable) · Estatus · Comisión y moneda · Plazos de pago (presets) · Marca del PDF (nombre, handle, correo, logo, pie). |
+| `/configuracion` | SettingsPage | Pestañas: Tarifas (catálogo reordenable) · Estatus · Comisión y moneda · **Metas (meta anual de ventas netas por año, prorrateada en partes iguales entre doce meses)** · Plazos de pago (presets) · Marca del PDF (nombre, handle, correo, logo, pie). |
 
 ### Jerarquía de componentes (3 páginas clave)
 ```
 HomePage
 ├─ PageHeader ("Hola, Ana" + fecha)
-├─ PaymentTimeline            ← hero: eje horizontal de 90 días; cada cobro es un punto con monto y marca; agrupado por moneda
+├─ PaymentsCalendar           ← hero: rejilla del mes; cada cobro muestra monto y código de moneda; navegación mes a mes en la URL
 ├─ KpiRow
 │  ├─ KpiTile (Vencido, rojo)  KpiTile (Por cobrar este mes)  KpiTile (Comisiones pendientes)
 ├─ UpcomingList "Entregas de contenido"
@@ -812,7 +812,7 @@ ReportsPage
 
 ## 7. Sistema de Diseño
 
-Dirección: **editorial / lifestyle**. Cálido pero no "crema con terracota"; el acento es mora profunda y el verde salvia hace de contrapeso. La personalidad la lleva la tipografía serif en nombres de campañas y marcas; los datos van en sans con cifras tabulares. Un solo elemento memorable: la Línea de cobros del Inicio.
+Dirección: **editorial / lifestyle**. Cálido pero no "crema con terracota"; el acento es mora profunda y el verde salvia hace de contrapeso. La personalidad la lleva la tipografía serif en nombres de campañas y marcas; los datos van en sans con cifras tabulares. Un solo elemento memorable: el calendario de cobros del Inicio.
 
 ### Colores
 | Rol | Hex | Uso |
@@ -939,8 +939,8 @@ Crear el proyecto `camila-rendon-os` (región `us-east-1` o la más cercana a M�
 `lib/paymentPlan.ts` (pura, con tests), `api/payments.ts`, `PaymentPlanGenerator` (elegir preset + fecha base → filas editables; o manual), tabla de pagos en `PaymentsTab` con estatus cambiable y `paid_at` automático. Regenerar plan respeta pagos ya pagados con confirmación.
 ✓ Listo cuando: preset 50/50 sobre 2 000 USD con fecha base 1-oct genera 1 000 el 1-oct y 1 000 el 31-oct; total 1 001 con preset 50/50 genera 500.50 y 500.50; total 1 000 a tres partes iguales genera 333.33 / 333.33 / 333.34; `paymentPlan.test.ts` pasa; marcar una fila como pagada guarda `paid_at = hoy`.
 
-**Paso 8: Inicio — Línea de cobros y KPIs**
-`HomePage`, `PaymentTimeline` (eje horizontal hoy → +90 días; marcas de semanas; puntos por cobro con monto, marca y color por estatus; agrupación por moneda en filas; scroll horizontal en móvil), `KpiRow`, listas de entregas y publicaciones próximas, campañas en aprobación.
+**Paso 8: Inicio — calendario de cobros y KPIs**
+`HomePage`, `PaymentsCalendar` (rejilla mensual con semana de lunes a domingo; cada cobro con su punto de estatus, su monto y su código de moneda; máximo tres por día y el resto como "y N más"; navegación de mes en los parámetros `anio` y `mes`; scroll horizontal en móvil), aviso de vencidos de meses anteriores, `KpiRow`, listas de entregas y publicaciones próximas, campañas en aprobación.
 ✓ Listo cuando: con el seed, el Inicio muestra el pago vencido en rojo, la suma "por cobrar este mes" coincide con la suma manual de `payment_schedules` del mes, y la timeline es legible en 375 px.
 
 **Paso 9: Facturas, contrato y comisión pagada**
@@ -1163,7 +1163,7 @@ Fondo `#F7F2EC` · Superficie `#FFFFFF` · Superficie 2 `#EFE7DE` · Tinta `#2A2
 - Radios 6 px controles / 10 px paneles; paneles con borde de 1 px, sin sombra
 - Sidebar 232 px en escritorio; barra inferior en móvil
 - Movimiento solo como respuesta a una acción; respetar `prefers-reduced-motion`
-- Un elemento memorable: la Línea de cobros del Inicio. Todo lo demás sobrio.
+- Un elemento memorable: el calendario de cobros del Inicio. Todo lo demás sobrio.
 
 ## Variables de entorno
 
@@ -1197,5 +1197,5 @@ Fondo `#F7F2EC` · Superficie `#FFFFFF` · Superficie 2 `#EFE7DE` · Tinta `#2A2
 8. **Cada paso del §9 se verifica con su criterio "✓ Listo cuando" antes de continuar.** Sin saltarse pasos ni marcar completo lo que no se probó.
 9. **Un componente por archivo, máx. 250 líneas.** Funciones de negocio puras y con test en `lib/`.
 10. **Diseño según §7 sin desviaciones.** Nada de tarjetas idénticas con sombra gris, gradientes decorativos, eyebrows en mayúsculas ni animaciones de entrada.
-11. **Móvil funcional.** Toda pantalla usable en 375 px; la Línea de cobros con scroll horizontal, tablas con columnas prioritarias.
+11. **Móvil funcional.** Toda pantalla usable en 375 px; el calendario de cobros con scroll horizontal, tablas con columnas prioritarias.
 12. **Nunca commitear secretos.** `.env.example` sí; `.env.local` jamás.

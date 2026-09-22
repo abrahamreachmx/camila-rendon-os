@@ -1,13 +1,20 @@
 import { Link } from 'react-router'
 import { PAYMENT_STATUS_STYLE } from '@/components/data/StatusBadge'
 import { isOverdue, todayIso, type IsoDate } from '@/lib/dates'
-import { formatMoneyShort, type Currency } from '@/lib/money'
+import { formatAmountShort, formatMoney, type Currency } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import type { PaymentStatus, PaymentWithCampaign } from '@/types'
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
-/** Rejilla mensual: cada día muestra sus cobros con un punto del color de su estatus. */
+/** Más cobros que esto en un día y el resto se resume en una línea. */
+const MAX_PER_DAY = 3
+
+/**
+ * Rejilla mensual de cobros. Cada pago muestra su moneda de forma explícita
+ * porque en español los pesos y los dólares se formatean casi igual y Ana
+ * necesita saber en qué va a recibir cada entrada.
+ */
 export function PaymentsCalendar({
   year,
   month,
@@ -45,6 +52,8 @@ export function PaymentsCalendar({
         <div className="grid grid-cols-7">
           {cells.map((date, index) => {
             const dayPayments = date ? (byDay.get(date) ?? []) : []
+            const shown = dayPayments.slice(0, MAX_PER_DAY)
+            const hidden = dayPayments.length - shown.length
             return (
               <div
                 key={index}
@@ -65,23 +74,40 @@ export function PaymentsCalendar({
                       {Number(date.slice(8))}
                     </span>
                     <div className="mt-1 space-y-1">
-                      {dayPayments.map((payment) => {
+                      {shown.map((payment) => {
                         const overdue = isOverdue(payment.due_date, payment.status, today)
                         const style = PAYMENT_STATUS_STYLE[overdue ? 'vencido' : (payment.status as PaymentStatus)]
+                        const currency = payment.campaign.currency as Currency
+                        const amount = Number(payment.amount)
                         return (
                           <Link
                             key={payment.id}
                             to={`/campanas/${payment.campaign.id}`}
-                            title={`${payment.campaign.company?.name ?? ''} · ${payment.campaign.name}`}
+                            title={`${payment.campaign.company?.name ?? ''} · ${payment.campaign.name} · ${formatMoney(amount, currency)} ${currency} · ${style.label}`}
                             className="flex items-center gap-1 rounded-sm px-1 py-0.5 text-[11px] hover:bg-surface-2"
                           >
-                            <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: style.color }} />
+                            <span
+                              className="size-1.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: style.color }}
+                              aria-hidden
+                            />
                             <span className="truncate tabular-nums">
-                              {formatMoneyShort(Number(payment.amount), payment.campaign.currency as Currency)}
+                              {formatAmountShort(amount, currency)}
+                            </span>
+                            <span className="shrink-0 text-[10px] font-semibold text-ink-muted">
+                              {currency}
                             </span>
                           </Link>
                         )
                       })}
+                      {hidden > 0 && (
+                        <Link
+                          to={`/cobros?anio=${year}&mes=${month}`}
+                          className="block rounded-sm px-1 py-0.5 text-[11px] text-ink-muted underline-offset-2 hover:bg-surface-2 hover:underline"
+                        >
+                          y {hidden} más
+                        </Link>
+                      )}
                     </div>
                   </>
                 )}

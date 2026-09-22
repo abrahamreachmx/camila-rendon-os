@@ -37,9 +37,14 @@ export type CampaignWithRelations = Campaign & {
   quotes: Quote[]
 }
 
+/** Lo mínimo de un cobro para resumir el estatus de cobro de una campaña. */
+export type PaymentBrief = Pick<Payment, 'amount' | 'status' | 'due_date'>
+
 export type CampaignListRow = Campaign & {
   company: Pick<Company, 'id' | 'name'> | null
   status: Pick<CampaignStatus, 'id' | 'name' | 'color' | 'is_closed'> | null
+  /** Sólo lo trae listCampaigns; getHomeData usa su propio select sin cobros. */
+  payments?: PaymentBrief[]
 }
 
 export type PaymentWithCampaign = Payment & {

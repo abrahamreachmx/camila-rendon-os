@@ -1,6 +1,6 @@
 import {
-  Bar, BarChart, CartesianGrid, Cell, LabelList, Legend, ResponsiveContainer,
-  Tooltip, XAxis, YAxis,
+  Bar, BarChart, CartesianGrid, Cell, LabelList, Legend, ReferenceLine,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import { formatMoney, formatMoneyShort } from '@/lib/money'
 import type { ReportSummary } from '@/types'
@@ -45,7 +45,14 @@ function TooltipBox({
   )
 }
 
-export function MonthlySalesChart({ data }: { data: ReportSummary['monthly_sales'] }) {
+export function MonthlySalesChart({
+  data,
+  monthlyGoal,
+}: {
+  data: ReportSummary['monthly_sales']
+  /** Meta mensual del año consultado. Si no hay meta capturada, no se dibuja. */
+  monthlyGoal?: number | null
+}) {
   const rows = data.map((row) => ({ mes: monthLabel(row.month), neto: Number(row.net_mxn) }))
   return (
     <ChartCard title="Ventas netas por mes" hint="Consolidado en pesos">
@@ -59,6 +66,17 @@ export function MonthlySalesChart({ data }: { data: ReportSummary['monthly_sales
             <YAxis {...AXIS} axisLine={false} width={64}
               tickFormatter={(value: number) => formatMoneyShort(value, 'MXN')} />
             <Tooltip cursor={{ fill: '#EFE7DE' }} content={<TooltipBox />} />
+            {monthlyGoal ? (
+              <ReferenceLine
+                y={monthlyGoal}
+                stroke={MUTED}
+                strokeDasharray="4 4"
+                // Sin esto la línea desaparece cuando la meta queda por encima
+                // del eje, que es justo cuando más importa verla.
+                ifOverflow="extendDomain"
+                label={{ value: 'Meta mensual', position: 'insideTopRight', fill: MUTED, fontSize: 11 }}
+              />
+            ) : null}
             <Bar isAnimationActive={false} dataKey="neto" name="Neto" fill={PLUM} radius={[4, 4, 0, 0]} maxBarSize={44}>
               <LabelList dataKey="neto" position="top" offset={8}
                 formatter={(value) => formatMoneyShort(Number(value ?? 0), 'MXN')}

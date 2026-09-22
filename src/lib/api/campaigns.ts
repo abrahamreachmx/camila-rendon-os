@@ -11,7 +11,11 @@ import { replaceItems } from '@/lib/api/campaignItems'
 import { getSettings } from '@/lib/api/settings'
 import { listStatuses } from '@/lib/api/statuses'
 
-const LIST_SELECT = '*, company:companies(id, name), status:campaign_statuses(id, name, color, is_closed)'
+// Los cobros vienen embebidos para poder resumir el estatus de cobro en la lista
+// sin una segunda consulta. Son pocas filas por campaña y el índice ya existe.
+const LIST_SELECT =
+  '*, company:companies(id, name), status:campaign_statuses(id, name, color, is_closed), ' +
+  'payments:payment_schedules(amount, status, due_date)'
 
 export async function listCampaigns(
   filters: {

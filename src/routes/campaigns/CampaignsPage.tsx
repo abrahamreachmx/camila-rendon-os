@@ -1,20 +1,28 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { Check, Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import { useNavigate, useSearchParams } from 'react-router'
 import { DataTable, type Column } from '@/components/data/DataTable'
+import { EditableTextCell } from '@/components/data/EditableTextCell'
 import { EmptyState } from '@/components/data/EmptyState'
 import { LoadingRows } from '@/components/data/LoadingRows'
 import { MoneyCell } from '@/components/data/MoneyCell'
-import { StatusBadge } from '@/components/data/StatusBadge'
+import {
+  COLLECTION_STATUS_STYLE,
+  PAYMENT_STATUS_STYLE,
+  StatusBadge,
+} from '@/components/data/StatusBadge'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { listCampaigns } from '@/lib/api/campaigns'
+import { listCampaigns, updateCampaign } from '@/lib/api/campaigns'
 import { listCompanies } from '@/lib/api/companies'
 import { listStatuses } from '@/lib/api/statuses'
+import { campaignPaymentStatus, collectionSortValue } from '@/lib/collection'
 import { calcCommission } from '@/lib/commission'
-import { formatDateShort } from '@/lib/dates'
+import { formatDateShort, todayIso } from '@/lib/dates'
 import { CURRENCIES, type Currency } from '@/lib/money'
 import type { CampaignListRow } from '@/types'
 
@@ -36,6 +44,28 @@ export default function CampaignsPage() {
   const { data: statuses = [] } = useQuery({ queryKey: ['statuses'], queryFn: listStatuses })
   const { data: companies = [] } = useQuery({ queryKey: ['companies', {}], queryFn: () => listCompanies() })
 
+  const queryClient = useQueryClient()
+
+  /** Guarda un cambio hecho desde la tabla sin salir de la lista. */
+  const edit = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: { name?: string; status_id?: string } }) =>
+      updateCampaign(id, patch),
+    onSuccess: (_result, { id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['campaigns'] })
+      void queryClient.invalidateQueries({ queryKey: ['campaign', id] })
+      void queryClient.invalidateQueries({ queryKey: ['home'] })
+      toast.success('Campaña actualizada.')
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  // Se resuelve una vez por render: DataTable reordena y repinta las celdas.
+  const today = todayIso()
+  const collection = useMemo(
+    () => new Map(campaigns.map((c) => [c.id, campaignPaymentStatus(c.payments ?? [], today)])),
+    [campaigns, today],
+  )
+
   function setParam(key: string, value: string | null) {
     const next = new URLSearchParams(params)
     if (value && value !== ALL) next.set(key, value)
@@ -50,8 +80,13 @@ export default function CampaignsPage() {
       sortValue: (row) => row.name,
       cell: (row) => (
         <div className="min-w-0">
-          <span className="font-heading text-[17px]">{row.name}</span>
-          <span className="block text-[13px] text-ink-muted">{row.company?.name ?? '—'}</span>
+          <EditableTextCell
+            value={row.name}
+            label="Nombre de la campaña"
+            className="font-heading text-[17px]"
+            onSave={(name) => edit.mutate({ id: row.id, patch: { name } })}
+          />
+          <span className="block px-1 text-[13px] text-ink-muted">{row.company?.name ?? '—'}</span>
         </div>
       ),
     },
@@ -59,7 +94,44 @@ export default function CampaignsPage() {
       key: 'status',
       header: 'Estatus',
       sortValue: (row) => row.status?.name ?? '',
-      cell: (row) => (row.status ? <StatusBadge label={row.status.name} color={row.status.color} /> : '—'),
+      cell: (row) => (
+        <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
+          {row.status && <StatusBadge label={row.status.name} color={row.status.color} />}
+          <Select
+            value={row.status?.id ?? ''}
+            onValueChange={(status_id) => edit.mutate({ id: row.id, patch: { status_id } })}
+          >
+            {/* Sólo el chevron: la insignia de al lado ya dice el estatus. */}
+            <SelectTrigger
+              className="size-8 shrink-0 justify-center p-0"
+              aria-label={`Cambiar el estatus de ${row.name}`}
+            />
+            <SelectContent>
+              {statuses.map((status) => (
+                <SelectItem key={status.id} value={status.id}>{status.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ),
+    },
+    {
+      key: 'collection',
+      header: 'Cobro',
+      hideOnMobile: true,
+      sortValue: (row) => collectionSortValue(collection.get(row.id)!),
+      cell: (row) => {
+        const c = collection.get(row.id)!
+        const style = COLLECTION_STATUS_STYLE[c.status]
+        // Lo vencido se distingue por color y por palabra: sólo por color sería
+        // información inaccesible para quien no distingue el rojo.
+        const label =
+          c.status === 'parcial'
+            ? `Parcial · ${c.paidPct} %${c.hasOverdue ? ' · vencido' : ''}`
+            : style.label
+        const color = c.hasOverdue ? PAYMENT_STATUS_STYLE.vencido.color : style.color
+        return <StatusBadge label={label} color={color} />
+      },
     },
     {
       key: 'gross',

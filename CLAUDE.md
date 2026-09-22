@@ -36,7 +36,7 @@ Desviaciones conscientes respecto al `BLUEPRINT.md`, y por qué:
 - `src/components/ui/` — primitivas shadcn (no editar a mano salvo tokens)
 - `src/components/{layout,data,forms}/` — compartidos
 - `src/lib/api/` — único lugar que habla con Supabase; una función por operación
-- `src/lib/*.ts` — funciones puras (dinero, plan de pagos, comisión, periodos, CSV) con tests
+- `src/lib/*.ts` — funciones puras (dinero, plan de pagos, comisión, periodos, CSV, metas, estatus de cobro) con tests
 - `src/lib/schemas/` — esquemas Zod compartidos por formularios y api
 - `src/pdf/` — documentos react-pdf y tema
 - `supabase/migrations/` — SQL numerado; `supabase/seed.sql`
@@ -55,6 +55,13 @@ Componente → hook de TanStack Query → `lib/api/*` → supabase-js → Postgr
   cero filas y no puede escribir. Dar de alta a alguien:
   `insert into app_users (user_id, email) select id, email from auth.users where email = '…';`
 - "Vencido" no se guarda: es `status <> 'pagado' and due_date < hoy`, calculado en consulta.
+- El estatus de cobro de una campaña se resume con `campaignPaymentStatus` (`src/lib/collection.ts`)
+  a partir de los cobros embebidos en `listCampaigns`. Se calcula en el cliente a propósito:
+  "vencido" depende de `todayIso()` en la zona del navegador, y `current_date` de Postgres
+  es UTC, lo que por la noche daría dos verdades distintas sobre la misma fila.
+- Las metas de venta son anuales y viven como jsonb en `settings.sales_goals`, igual que
+  los plazos de pago. Se prorratean en partes iguales con `monthlyTarget` / `quarterlyTarget`
+  (`src/lib/goals.ts`). El Inicio compara contra `report_summary` del trimestre en curso.
 
 ## Reglas de organización
 
@@ -81,7 +88,7 @@ En el código son tokens de Tailwind: `canvas`, `surface`, `surface-2`, `ink`, `
 - Radios 6 px controles / 10 px paneles; paneles con borde de 1 px, sin sombra
 - Sidebar 232 px en escritorio; barra inferior en móvil
 - Movimiento solo como respuesta a una acción; respetar `prefers-reduced-motion`
-- Un elemento memorable: la Línea de cobros del Inicio. Todo lo demás sobrio.
+- Un elemento memorable: el calendario de cobros del Inicio. Todo lo demás sobrio.
 
 ## Variables de entorno
 
