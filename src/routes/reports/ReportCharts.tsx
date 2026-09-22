@@ -71,6 +71,9 @@ export function MonthlySalesChart({
                 y={monthlyGoal}
                 stroke={MUTED}
                 strokeDasharray="4 4"
+                // Sin esto la línea desaparece cuando la meta queda por encima
+                // del eje, que es justo cuando más importa verla.
+                ifOverflow="extendDomain"
                 label={{ value: 'Meta mensual', position: 'insideTopRight', fill: MUTED, fontSize: 11 }}
               />
             ) : null}
