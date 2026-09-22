@@ -1,9 +1,18 @@
 import { Link } from 'react-router'
+import { readableTextColor } from '@/lib/contrast'
 import { type IsoDate } from '@/lib/dates'
 import { goalProgress, targetForRange, type SalesGoal } from '@/lib/goals'
 import { formatMoney } from '@/lib/money'
 import { type PeriodRange } from '@/lib/periods'
 import { cn } from '@/lib/utils'
+
+// El ámbar y el verde del §7 están pensados para el tinte al 12 % de un badge.
+// Aquí el porcentaje va como texto de 13 px sobre superficie blanca, donde el
+// ámbar sólo llega a 3.03:1, por debajo del 4.5:1 que pide WCAG AA. Se oscurecen
+// con el mismo helper del badge, midiendo contra blanco.
+const WHITE: [number, number, number] = [255, 255, 255]
+const ON_TRACK_TEXT = readableTextColor('#3E7C5A', { tintAlpha: 0, surface: WHITE })
+const BEHIND_TEXT = readableTextColor('#C08A2E', { tintAlpha: 0, surface: WHITE })
 
 /**
  * Avance contra la meta del mes y del trimestre. La cifra grande es lo vendido;
@@ -76,7 +85,7 @@ function GoalCell({
       </p>
       <p className="mt-0.5 text-[13px] text-ink-muted">
         de {formatMoney(p.target, 'MXN')} ·{' '}
-        <span className={cn('font-semibold', p.onTrack ? 'text-paid' : 'text-pending')}>
+        <span className="font-semibold" style={{ color: p.onTrack ? ON_TRACK_TEXT : BEHIND_TEXT }}>
           {p.pct} %
         </span>
       </p>
