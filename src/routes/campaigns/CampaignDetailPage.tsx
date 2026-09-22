@@ -20,7 +20,6 @@ import { formatMoney, type Currency } from '@/lib/money'
 import { CampaignInvoicesTab } from '@/routes/campaigns/tabs/InvoicesTab'
 import { CampaignPaymentsTab } from '@/routes/campaigns/tabs/PaymentsTab'
 import { CampaignQuoteTab } from '@/routes/campaigns/tabs/QuoteTab'
-import { CampaignServicesTab } from '@/routes/campaigns/tabs/ServicesTab'
 import { CampaignSummaryTab } from '@/routes/campaigns/tabs/SummaryTab'
 
 export default function CampaignDetailPage() {
@@ -107,17 +106,15 @@ export default function CampaignDetailPage() {
       <Tabs defaultValue="resumen">
         <TabsList className="mb-6 flex-wrap">
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
-          <TabsTrigger value="servicios">Servicios</TabsTrigger>
+          <TabsTrigger value="cotizacion">Cotización</TabsTrigger>
           <TabsTrigger value="pagos">Pagos</TabsTrigger>
           <TabsTrigger value="facturas">Facturas</TabsTrigger>
-          <TabsTrigger value="cotizacion">Cotización</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumen"><CampaignSummaryTab campaign={campaign} onSaved={refresh} /></TabsContent>
-        <TabsContent value="servicios"><CampaignServicesTab campaign={campaign} onSaved={refresh} /></TabsContent>
+        <TabsContent value="cotizacion"><CampaignQuoteTab campaign={campaign} onSaved={refresh} /></TabsContent>
         <TabsContent value="pagos"><CampaignPaymentsTab campaign={campaign} onSaved={refresh} /></TabsContent>
         <TabsContent value="facturas"><CampaignInvoicesTab campaign={campaign} onSaved={refresh} /></TabsContent>
-        <TabsContent value="cotizacion"><CampaignQuoteTab campaign={campaign} onSaved={refresh} /></TabsContent>
       </Tabs>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

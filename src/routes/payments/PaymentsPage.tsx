@@ -15,7 +15,6 @@ import { listOverduePayments, listPayments, updatePayment } from '@/lib/api/paym
 import { formatDateLong, isOverdue, todayIso } from '@/lib/dates'
 import { formatMoney, round2, toMxn, type Currency } from '@/lib/money'
 import { monthRange } from '@/lib/periods'
-import { PaymentsCalendar } from '@/routes/payments/PaymentsCalendar'
 import type { EffectivePaymentStatus, PaymentStatus, PaymentWithCampaign } from '@/types'
 
 const ALL = 'todos'
@@ -164,7 +163,6 @@ export default function PaymentsPage() {
         <LoadingRows rows={6} />
       ) : (
         <div className="space-y-6">
-          <PaymentsCalendar year={year} month={month} payments={payments} />
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Select

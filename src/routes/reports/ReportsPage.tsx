@@ -12,8 +12,9 @@ import { Button } from '@/components/ui/button'
 import { listCampaigns } from '@/lib/api/campaigns'
 import { getSignedUrl } from '@/lib/api/invoices'
 import { deleteReport, getReportSummary, listReports, readSnapshot, saveReport } from '@/lib/api/reports'
-import { getSettings } from '@/lib/api/settings'
+import { getSettings, readSalesGoals } from '@/lib/api/settings'
 import { calcCommission } from '@/lib/commission'
+import { goalForYear, monthlyTarget } from '@/lib/goals'
 import { downloadCsv, toCsv, type CsvColumn } from '@/lib/csv'
 import { formatDateLong, formatDateShort } from '@/lib/dates'
 import { formatMoney, toMxn, type Currency } from '@/lib/money'
@@ -51,6 +52,10 @@ export default function ReportsPage() {
 
   // Un reporte guardado se lee de su snapshot, nunca se recalcula.
   const summary: ReportSummary | undefined = opened ? readSnapshot(opened) : live
+
+  // La meta del año que se está consultando, prorrateada al mes. Sin meta no se dibuja.
+  const goalYear = goalForYear(settings ? readSalesGoals(settings) : [], Number(range.from.slice(0, 4)))
+  const monthlyGoal = goalYear ? monthlyTarget(goalYear.target_net_mxn) : null
   const comparison = opened ? null : livePrevious
   const periodTitle = opened ? opened.title : `Resultados · ${range.label}`
 
@@ -188,7 +193,7 @@ export default function ReportsPage() {
           <KpiGrid summary={summary} previous={comparison} />
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <MonthlySalesChart data={summary.monthly_sales} />
+            <MonthlySalesChart data={summary.monthly_sales} monthlyGoal={monthlyGoal} />
             <CollectionsChart data={summary.collections} />
             <div className="lg:col-span-2">
               <TopCompaniesChart data={summary.top_companies} />

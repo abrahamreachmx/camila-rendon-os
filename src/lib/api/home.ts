@@ -12,8 +12,7 @@ const CAMPAIGN_SELECT =
 
 export type HomeData = {
   today: IsoDate
-  horizon: IsoDate
-  upcomingPayments: PaymentWithCampaign[]
+  /** Los cobros vencidos de meses anteriores no caben en la rejilla del mes, se avisan aparte. */
   overduePayments: PaymentWithCampaign[]
   overdueMxn: number
   dueThisMonthMxn: number
@@ -30,14 +29,7 @@ export async function getHomeData(): Promise<HomeData> {
   const monthEnd = lastDayOfMonth(today)
   const inTwoWeeks = addDaysIso(today, 14)
 
-  const [upcoming, overdue, monthDue, openCampaigns, statuses] = await Promise.all([
-    supabase
-      .from('payment_schedules')
-      .select(PAYMENT_SELECT)
-      .neq('status', 'pagado')
-      .gte('due_date', today)
-      .lte('due_date', horizon)
-      .order('due_date'),
+  const [overdue, monthDue, openCampaigns, statuses] = await Promise.all([
     supabase
       .from('payment_schedules')
       .select(PAYMENT_SELECT)
@@ -54,7 +46,6 @@ export async function getHomeData(): Promise<HomeData> {
     supabase.from('campaign_statuses').select('*'),
   ])
 
-  const upcomingPayments = unwrap(upcoming) as unknown as PaymentWithCampaign[]
   const overduePayments = unwrap(overdue) as unknown as PaymentWithCampaign[]
   const monthPayments = unwrap(monthDue) as unknown as PaymentWithCampaign[]
   const campaigns = unwrap(openCampaigns) as unknown as CampaignListRow[]
@@ -64,8 +55,6 @@ export async function getHomeData(): Promise<HomeData> {
 
   return {
     today,
-    horizon,
-    upcomingPayments,
     overduePayments,
     overdueMxn: sumMxn(overduePayments),
     dueThisMonthMxn: sumMxn(monthPayments),

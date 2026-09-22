@@ -36,6 +36,20 @@ export const PAYMENT_STATUS_STYLE = {
   vencido: { label: 'Vencido', color: '#B4433B' },
 } as const
 
+/**
+ * Estatus de cobro agregado de una campaña. Reusa la paleta de cobros del §7.
+ * Va aparte de PAYMENT_STATUS_STYLE porque ese mapa lo indexan cuatro pantallas
+ * por el estatus de un cobro individual, que nunca es "parcial" ni "sin plan".
+ */
+export const COLLECTION_STATUS_STYLE = {
+  sin_plan: { label: 'Sin plan', color: '#8B8079' },
+  pendiente: PAYMENT_STATUS_STYLE.pendiente,
+  en_proceso: PAYMENT_STATUS_STYLE.en_proceso,
+  parcial: { label: 'Parcial', color: '#C08A2E' },
+  pagado: PAYMENT_STATUS_STYLE.pagado,
+  vencido: PAYMENT_STATUS_STYLE.vencido,
+} as const
+
 export const GIFTING_STATUS_STYLE = {
   propuesto: { label: 'Propuesto', color: '#8B8079' },
   enviado: { label: 'Enviado', color: '#3F5F8A' },

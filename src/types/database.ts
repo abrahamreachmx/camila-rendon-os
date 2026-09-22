@@ -577,6 +577,7 @@ export type Database = {
           default_currency: string
           id: number
           payment_presets: Json
+          sales_goals: Json
           quote_footer: string | null
           quote_validity_days: number
           updated_at: string
@@ -591,6 +592,7 @@ export type Database = {
           default_currency?: string
           id?: number
           payment_presets?: Json
+          sales_goals?: Json
           quote_footer?: string | null
           quote_validity_days?: number
           updated_at?: string
@@ -605,6 +607,7 @@ export type Database = {
           default_currency?: string
           id?: number
           payment_presets?: Json
+          sales_goals?: Json
           quote_footer?: string | null
           quote_validity_days?: number
           updated_at?: string

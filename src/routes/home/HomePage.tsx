@@ -1,19 +1,56 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight } from 'lucide-react'
-import { Link } from 'react-router'
+import { useMemo } from 'react'
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router'
 import { EmptyState } from '@/components/data/EmptyState'
 import { LoadingRows } from '@/components/data/LoadingRows'
+import { PaymentsCalendar } from '@/components/data/PaymentsCalendar'
 import { StatusBadge } from '@/components/data/StatusBadge'
+import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { getHomeData } from '@/lib/api/home'
+import { listPayments } from '@/lib/api/payments'
+import { getReportSummary } from '@/lib/api/reports'
+import { getSettings, readSalesGoals } from '@/lib/api/settings'
 import { formatDateLong, formatDateShort } from '@/lib/dates'
 import { formatMoney, type Currency } from '@/lib/money'
+import { currentMonth, currentQuarter, monthRange } from '@/lib/periods'
 import { cn } from '@/lib/utils'
-import { PaymentTimeline } from '@/routes/home/PaymentTimeline'
+import { GoalProgressPanel } from '@/routes/home/GoalProgressPanel'
 import type { CampaignListRow } from '@/types'
 
 export default function HomePage() {
+  const [params, setParams] = useSearchParams()
+  const now = new Date()
+  const year = Number(params.get('anio') ?? now.getFullYear())
+  const month = Number(params.get('mes') ?? now.getMonth() + 1)
+  const range = monthRange(year, month)
+
   const { data, isPending } = useQuery({ queryKey: ['home'], queryFn: getHomeData })
+  const { data: payments = [] } = useQuery({
+    queryKey: ['payments', { from: range.from, to: range.to }],
+    queryFn: () => listPayments({ from: range.from, to: range.to }),
+  })
+
+  // El avance contra la meta: la configuración ya está cacheada en media app y
+  // el resumen del trimestre comparte clave con Reportes. El desglose mensual
+  // que trae ese mismo resumen evita una tercera consulta.
+  const quarter = useMemo(() => currentQuarter(), [])
+  const thisMonth = useMemo(() => currentMonth(), [])
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: getSettings })
+  const { data: report } = useQuery({
+    queryKey: ['report', quarter.from, quarter.to],
+    queryFn: () => getReportSummary(quarter.from, quarter.to),
+  })
+
+  /** Mueve el calendario de mes guardando la posición en la URL, igual que Cobros. */
+  function move(delta: number) {
+    const next = new Date(year, month - 1 + delta, 1)
+    const params2 = new URLSearchParams(params)
+    params2.set('anio', String(next.getFullYear()))
+    params2.set('mes', String(next.getMonth() + 1))
+    setParams(params2, { replace: true })
+  }
 
   if (isPending || !data) {
     return (
@@ -28,7 +65,37 @@ export default function HomePage() {
     <>
       <PageHeader title="Hola, Ana" description={formatDateLong(data.today)} />
 
-      <PaymentTimeline today={data.today} upcoming={data.upcomingPayments} overdue={data.overduePayments} />
+      <section aria-label="Calendario de cobros">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-heading text-[20px]">Cobros</h2>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={() => move(-1)} aria-label="Mes anterior">
+              <ChevronLeft className="size-4" />
+            </Button>
+            <span className="min-w-[160px] text-center text-[13px] text-ink-muted">{range.label}</span>
+            <Button variant="ghost" size="icon" onClick={() => move(1)} aria-label="Mes siguiente">
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        </div>
+
+        {data.overduePayments.length > 0 && (
+          <Link
+            to="/cobros?estatus=vencido"
+            className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-overdue/40 bg-overdue/5 px-4 py-2 text-[13px] text-overdue hover:bg-overdue/10"
+          >
+            <span className="font-semibold">
+              {data.overduePayments.length === 1
+                ? '1 cobro vencido'
+                : `${data.overduePayments.length} cobros vencidos`}
+            </span>
+            <span>por {formatMoney(data.overdueMxn, 'MXN')}, de meses anteriores.</span>
+            <span className="underline underline-offset-2">Ver la lista</span>
+          </Link>
+        )}
+
+        <PaymentsCalendar year={year} month={month} payments={payments} />
+      </section>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <KpiTile
@@ -51,6 +118,21 @@ export default function HomePage() {
           to="/campanas"
         />
       </div>
+
+      {settings && report && (
+        <GoalProgressPanel
+          goals={readSalesGoals(settings)}
+          today={data.today}
+          month={{
+            range: thisMonth,
+            // monthly_sales no rellena meses en cero: el día 1 el mes aún no viene.
+            actual: Number(
+              report.monthly_sales.find((m) => m.month === thisMonth.from.slice(0, 7))?.net_mxn ?? 0,
+            ),
+          }}
+          quarter={{ range: quarter, actual: Number(report.sales.net_mxn) }}
+        />
+      )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
         <CampaignList

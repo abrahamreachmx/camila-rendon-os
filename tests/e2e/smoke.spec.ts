@@ -53,11 +53,23 @@ test('login, nueva campaña, plan 50/50 y aparición en Inicio', async ({ page }
 
   await expect(page.getByRole('heading', { name: CAMPAIGN })).toBeVisible()
 
-  // --- los dos cobros salen en la Línea de cobros del Inicio ---
+  // --- los dos cobros salen en el calendario del Inicio ---
+  // El plan es 50/50 a partir de hoy+3, así que el segundo cobro cae 30 días
+  // después: puede quedar en el mes siguiente. Se recorren tres meses.
   await page.click('aside nav a:has-text("Inicio")')
-  const timeline = page.locator('section').filter({ hasText: 'Línea de cobros' }).first()
-  await expect(timeline).toBeVisible()
-  await expect(timeline.locator(`a[href="/campanas/${campaignUrl.split('/').pop()}"]`)).toHaveCount(2)
+  const calendario = page.locator('section[aria-label="Calendario de cobros"]')
+  await expect(calendario).toBeVisible()
+
+  const enlace = `a[href="/campanas/${campaignUrl.split('/').pop()}"]`
+  let encontrados = 0
+  for (let mes = 0; mes < 3; mes++) {
+    await expect
+      .poll(async () => calendario.locator(enlace).count(), { timeout: 5000 })
+      .toBeGreaterThanOrEqual(0)
+    encontrados += await calendario.locator(enlace).count()
+    if (mes < 2) await calendario.getByRole('button', { name: 'Mes siguiente' }).click()
+  }
+  expect(encontrados).toBe(2)
 
   // --- limpieza ---
   await page.goto(campaignUrl)

@@ -63,6 +63,28 @@ export function formatMoneyShort(amount: number, currency: Currency = 'MXN'): st
   return compact.format(amount)
 }
 
+/**
+ * Solo la cifra, en compacto y sin símbolo de moneda: 153.4k
+ * Se usa donde la moneda se muestra aparte como etiqueta, por ejemplo en el
+ * calendario de cobros, para que un pago en dólares no se confunda con uno en pesos.
+ */
+export function formatAmountShort(amount: number, currency: Currency = 'MXN'): string {
+  const digits = currency === 'COP' ? 0 : 2
+  const abs = Math.abs(amount)
+  if (abs < 10_000) {
+    // Sin decimales cuando la cifra es redonda: en una celda de calendario
+    // "1,000" cabe y "1,000.00" se corta.
+    return new Intl.NumberFormat('es-MX', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: digits,
+    }).format(round2(amount))
+  }
+  return new Intl.NumberFormat('es-MX', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(amount)
+}
+
 /** Lee un importe escrito a mano: acepta "1,234.50", "$1 234.50" y "1234,50". */
 export function parseMoney(input: string): number {
   const cleaned = input.replace(/[^\d.,-]/g, '').trim()
