@@ -39,6 +39,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_users: {
+        Row: {
+          created_at: string
+          email: string | null
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       campaign_items: {
         Row: {
           campaign_id: string
@@ -577,9 +598,9 @@ export type Database = {
           default_currency: string
           id: number
           payment_presets: Json
-          sales_goals: Json
           quote_footer: string | null
           quote_validity_days: number
+          sales_goals: Json
           updated_at: string
         }
         Insert: {
@@ -592,9 +613,9 @@ export type Database = {
           default_currency?: string
           id?: number
           payment_presets?: Json
-          sales_goals?: Json
           quote_footer?: string | null
           quote_validity_days?: number
+          sales_goals?: Json
           updated_at?: string
         }
         Update: {
@@ -607,9 +628,9 @@ export type Database = {
           default_currency?: string
           id?: number
           payment_presets?: Json
-          sales_goals?: Json
           quote_footer?: string | null
           quote_validity_days?: number
+          sales_goals?: Json
           updated_at?: string
         }
         Relationships: []
@@ -619,12 +640,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_app_user: { Args: never; Returns: boolean }
       next_quote_folio: { Args: never; Returns: string }
       ping: { Args: never; Returns: string }
       report_summary: {
         Args: { from_date: string; to_date: string }
         Returns: Json
       }
+      valid_sales_goals: { Args: { goals: Json }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
