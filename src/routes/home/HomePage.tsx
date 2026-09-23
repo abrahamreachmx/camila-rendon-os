@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/data/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { getHomeData } from '@/lib/api/home'
+import { listPendingDeliverables } from '@/lib/api/deliverables'
 import { listPayments } from '@/lib/api/payments'
 import { getReportSummary } from '@/lib/api/reports'
 import { getSettings, readSalesGoals } from '@/lib/api/settings'
@@ -17,7 +18,9 @@ import { formatMoney, type Currency } from '@/lib/money'
 import { currentMonth, currentQuarter, monthRange } from '@/lib/periods'
 import { cn } from '@/lib/utils'
 import { GoalProgressPanel } from '@/routes/home/GoalProgressPanel'
-import type { CampaignListRow } from '@/types'
+import { deliverableLabel } from '@/lib/deliverables'
+import { isOverdue } from '@/lib/dates'
+import type { CampaignListRow, DeliverableWithCampaign } from '@/types'
 
 export default function HomePage() {
   const [params, setParams] = useSearchParams()
@@ -37,6 +40,10 @@ export default function HomePage() {
   // que trae ese mismo resumen evita una tercera consulta.
   const quarter = useMemo(() => currentQuarter(), [])
   const thisMonth = useMemo(() => currentMonth(), [])
+  const { data: deliverables = [] } = useQuery({
+    queryKey: ['deliverables', 'pending'],
+    queryFn: listPendingDeliverables,
+  })
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: getSettings })
   const { data: report } = useQuery({
     queryKey: ['report', quarter.from, quarter.to],
@@ -135,12 +142,7 @@ export default function HomePage() {
       )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        <CampaignList
-          title="Entregas de contenido"
-          empty="Nada por entregar en las próximas dos semanas."
-          campaigns={data.contentDue}
-          dateOf={(campaign) => campaign.content_due_date}
-        />
+        <DeliverableList today={data.today} items={deliverables} />
         <CampaignList
           title="Publicaciones"
           empty="Sin publicaciones programadas."
@@ -228,6 +230,53 @@ function CampaignList({
               </Link>
             </li>
           ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+/**
+ * Las piezas por entregar, no las campañas. Ana necesita saber qué contenido
+ * debe, no sólo qué campaña tiene fecha.
+ */
+function DeliverableList({
+  today,
+  items,
+}: {
+  today: string
+  items: DeliverableWithCampaign[]
+}) {
+  const visibles = items
+    .slice()
+    .sort((a, b) => (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999'))
+    .slice(0, 6)
+
+  return (
+    <section>
+      <h2 className="mb-3 font-heading text-[20px]">Entregas de contenido</h2>
+      {visibles.length === 0 ? (
+        <EmptyState message="Nada por entregar." />
+      ) : (
+        <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
+          {visibles.map((item) => {
+            const vencida = isOverdue(item.due_date ?? '', 'pendiente', today)
+            return (
+              <li key={item.id}>
+                <Link to={`/campanas/${item.campaign.id}`} className="block px-4 py-3 hover:bg-surface-2">
+                  <p className="flex items-baseline justify-between gap-2">
+                    <span className="min-w-0 truncate font-medium">{deliverableLabel(item)}</span>
+                    <span className={cn('shrink-0 text-[13px]', vencida ? 'text-overdue' : 'text-ink-muted')}>
+                      {formatDateShort(item.due_date)}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 truncate text-[13px] text-ink-muted">
+                    {item.campaign.company?.name ?? item.campaign.name}
+                  </p>
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       )}
     </section>

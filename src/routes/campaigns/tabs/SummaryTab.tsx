@@ -91,6 +91,7 @@ function toFields(campaign: CampaignWithRelations): CampaignFields {
     fx_rate_mxn: Number(campaign.fx_rate_mxn),
     content_due_date: campaign.content_due_date,
     publish_date: campaign.publish_date,
+    close_month: campaign.close_month,
     signed_at: campaign.signed_at,
     brief: campaign.brief,
     notes: campaign.notes,

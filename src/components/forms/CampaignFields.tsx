@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { listCompanies } from '@/lib/api/companies'
 import { listStatuses } from '@/lib/api/statuses'
+import { monthOptions } from '@/lib/periods'
 import { supabase } from '@/lib/supabase'
 import { CURRENCIES, type Currency } from '@/lib/money'
 import type { Contact } from '@/types'
@@ -18,12 +19,15 @@ export type CampaignFields = {
   fx_rate_mxn: number
   content_due_date: string | null
   publish_date: string | null
+  close_month: string | null
   signed_at: string | null
   brief: string | null
   notes: string | null
 }
 
 const NONE = 'ninguno'
+
+const MESES = monthOptions()
 
 export function CampaignFieldsForm({
   value,
@@ -144,6 +148,22 @@ export function CampaignFieldsForm({
           <Label htmlFor="campaign-due">Entrega de contenido</Label>
           <Input id="campaign-due" type="date" value={value.content_due_date ?? ''}
             onChange={(e) => onChange({ content_due_date: e.target.value || null })} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="campaign-close">Mes de cierre</Label>
+          <Select
+            value={value.close_month ?? NONE}
+            onValueChange={(mes) => onChange({ close_month: mes === NONE ? null : mes })}
+          >
+            <SelectTrigger id="campaign-close"><SelectValue /></SelectTrigger>
+            <SelectContent className="max-h-[320px]">
+              <SelectItem value={NONE}>Sin cerrar</SelectItem>
+              {MESES.map((mes) => (
+                <SelectItem key={mes.value} value={mes.value}>{mes.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[13px] text-ink-muted">Mes en que se cerró el trato. Ubica la campaña en los reportes.</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="campaign-publish">Publicación</Label>

@@ -22,6 +22,7 @@ export const campaignSchema = z
     fx_rate_mxn: z.number().positive('El tipo de cambio debe ser mayor que cero.'),
     content_due_date: isoDate,
     publish_date: isoDate,
+    close_month: isoDate,
     signed_at: isoDate,
     contract_signed: z.boolean(),
     brief: z.string().nullable(),

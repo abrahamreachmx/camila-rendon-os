@@ -19,6 +19,7 @@ import { calcCommission } from '@/lib/commission'
 import { formatMoney, type Currency } from '@/lib/money'
 import { CampaignInvoicesTab } from '@/routes/campaigns/tabs/InvoicesTab'
 import { CampaignPaymentsTab } from '@/routes/campaigns/tabs/PaymentsTab'
+import { CampaignDeliverablesTab } from '@/routes/campaigns/tabs/DeliverablesTab'
 import { CampaignQuoteTab } from '@/routes/campaigns/tabs/QuoteTab'
 import { CampaignSummaryTab } from '@/routes/campaigns/tabs/SummaryTab'
 
@@ -38,6 +39,8 @@ export default function CampaignDetailPage() {
     void queryClient.invalidateQueries({ queryKey: ['campaign', id] })
     void queryClient.invalidateQueries({ queryKey: ['campaigns'] })
     void queryClient.invalidateQueries({ queryKey: ['payments'] })
+    void queryClient.invalidateQueries({ queryKey: ['home'] })
+    void queryClient.invalidateQueries({ queryKey: ['deliverables'] })
   }
 
   const changeStatus = useMutation({
@@ -51,6 +54,8 @@ export default function CampaignDetailPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['campaigns'] })
       void queryClient.invalidateQueries({ queryKey: ['payments'] })
+    void queryClient.invalidateQueries({ queryKey: ['home'] })
+    void queryClient.invalidateQueries({ queryKey: ['deliverables'] })
       toast.success('Campaña eliminada.')
       void navigate('/campanas')
     },
@@ -107,12 +112,14 @@ export default function CampaignDetailPage() {
         <TabsList className="mb-6 flex-wrap">
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
           <TabsTrigger value="cotizacion">Cotización</TabsTrigger>
+          <TabsTrigger value="entregas">Entregas</TabsTrigger>
           <TabsTrigger value="pagos">Pagos</TabsTrigger>
           <TabsTrigger value="facturas">Facturas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumen"><CampaignSummaryTab campaign={campaign} onSaved={refresh} /></TabsContent>
         <TabsContent value="cotizacion"><CampaignQuoteTab campaign={campaign} onSaved={refresh} /></TabsContent>
+        <TabsContent value="entregas"><CampaignDeliverablesTab campaign={campaign} onSaved={refresh} /></TabsContent>
         <TabsContent value="pagos"><CampaignPaymentsTab campaign={campaign} onSaved={refresh} /></TabsContent>
         <TabsContent value="facturas"><CampaignInvoicesTab campaign={campaign} onSaved={refresh} /></TabsContent>
       </Tabs>
