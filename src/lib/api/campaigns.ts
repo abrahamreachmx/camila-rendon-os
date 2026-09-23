@@ -45,8 +45,9 @@ export async function getCampaign(id: string): Promise<CampaignWithRelations> {
     'No encontramos esa campaña.',
   )
 
-  const [items, payments, invoices, quotes] = await Promise.all([
+  const [items, deliverables, payments, invoices, quotes] = await Promise.all([
     supabase.from('campaign_items').select('*').eq('campaign_id', id).order('sort_order'),
+    supabase.from('campaign_deliverables').select('*').eq('campaign_id', id).order('sort_order'),
     supabase.from('payment_schedules').select('*').eq('campaign_id', id).order('sort_order').order('due_date'),
     supabase.from('invoices').select('*').eq('campaign_id', id).order('created_at', { ascending: false }),
     supabase.from('quotes').select('*').eq('campaign_id', id).order('issued_at', { ascending: false }),
@@ -55,6 +56,7 @@ export async function getCampaign(id: string): Promise<CampaignWithRelations> {
   return {
     ...(campaign as unknown as CampaignWithRelations),
     items: unwrap(items),
+    deliverables: unwrap(deliverables),
     payments: unwrap(payments),
     invoices: unwrap(invoices),
     quotes: unwrap(quotes),

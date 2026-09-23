@@ -60,6 +60,59 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_deliverables: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          delivered: boolean
+          delivered_at: string | null
+          description: string
+          due_date: string | null
+          id: string
+          notes: string | null
+          piece_number: number
+          sort_order: number
+          total_pieces: number
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          delivered?: boolean
+          delivered_at?: string | null
+          description: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          piece_number?: number
+          sort_order?: number
+          total_pieces?: number
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          delivered?: boolean
+          delivered_at?: string | null
+          description?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          piece_number?: number
+          sort_order?: number
+          total_pieces?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_deliverables_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_items: {
         Row: {
           campaign_id: string
@@ -156,6 +209,7 @@ export type Database = {
       campaigns: {
         Row: {
           brief: string | null
+          close_month: string | null
           commission_paid: boolean
           commission_paid_at: string | null
           commission_pct: number
@@ -179,6 +233,7 @@ export type Database = {
         }
         Insert: {
           brief?: string | null
+          close_month?: string | null
           commission_paid?: boolean
           commission_paid_at?: string | null
           commission_pct?: number
@@ -202,6 +257,7 @@ export type Database = {
         }
         Update: {
           brief?: string | null
+          close_month?: string | null
           commission_paid?: boolean
           commission_paid_at?: string | null
           commission_pct?: number

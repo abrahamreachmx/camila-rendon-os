@@ -19,6 +19,7 @@ export type Invoice = Row<'invoices'>
 export type Quote = Row<'quotes'>
 export type Gifting = Row<'gifting'>
 export type SavedReport = Row<'reports'>
+export type Deliverable = Row<'campaign_deliverables'>
 
 export type CompanyStage = 'prospecto' | 'negociando' | 'cliente'
 export type PaymentStatus = 'pendiente' | 'en_proceso' | 'pagado'
@@ -32,6 +33,7 @@ export type CampaignWithRelations = Campaign & {
   contact: Pick<Contact, 'id' | 'name' | 'email' | 'phone'> | null
   status: CampaignStatus | null
   items: CampaignItem[]
+  deliverables: Deliverable[]
   payments: Payment[]
   invoices: Invoice[]
   quotes: Quote[]
@@ -45,6 +47,12 @@ export type CampaignListRow = Campaign & {
   status: Pick<CampaignStatus, 'id' | 'name' | 'color' | 'is_closed'> | null
   /** Sólo lo trae listCampaigns; getHomeData usa su propio select sin cobros. */
   payments?: PaymentBrief[]
+}
+
+export type DeliverableWithCampaign = Deliverable & {
+  campaign: Pick<Campaign, 'id' | 'name'> & {
+    company: Pick<Company, 'id' | 'name'> | null
+  }
 }
 
 export type PaymentWithCampaign = Payment & {

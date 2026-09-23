@@ -105,3 +105,31 @@ export function deltaPct(current: number, previous: number): number | null {
   if (previous === 0) return current === 0 ? 0 : null
   return Math.round(((current - previous) / Math.abs(previous)) * 1000) / 10
 }
+
+/** Primer día del mes de una fecha, que es como se guarda el mes de cierre. */
+export function toMonthStart(iso: IsoDate): IsoDate {
+  return `${iso.slice(0, 7)}-01`
+}
+
+/** "septiembre 2026" a partir de un mes guardado como día primero. */
+export function formatMonth(iso: IsoDate | null | undefined): string {
+  if (!iso) return '—'
+  const month = Number(iso.slice(5, 7))
+  return `${MONTHS[month - 1]} ${iso.slice(0, 4)}`
+}
+
+/**
+ * Meses que ofrece el selector de mes de cierre, del más reciente al más
+ * antiguo. Arranca en 2025 porque ahí empieza el histórico cargado, y llega
+ * hasta diciembre del año entrante para poder cerrar tratos por adelantado.
+ */
+export function monthOptions(today = new Date()): { value: IsoDate; label: string }[] {
+  const out: { value: IsoDate; label: string }[] = []
+  for (let year = today.getFullYear() + 1; year >= 2025; year -= 1) {
+    for (let month = 12; month >= 1; month -= 1) {
+      const value = `${year}-${String(month).padStart(2, '0')}-01`
+      out.push({ value, label: `${capitalize(MONTHS[month - 1])} ${year}` })
+    }
+  }
+  return out
+}

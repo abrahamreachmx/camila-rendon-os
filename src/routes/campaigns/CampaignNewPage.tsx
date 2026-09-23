@@ -19,7 +19,7 @@ import type { CampaignItemInput } from '@/types'
 const EMPTY: CampaignFields = {
   company_id: '', contact_id: null, name: '', status_id: null,
   currency: 'MXN', fx_rate_mxn: 1,
-  content_due_date: null, publish_date: null, signed_at: null,
+  content_due_date: null, publish_date: null, close_month: null, signed_at: null,
   brief: null, notes: null,
 }
 

@@ -25,15 +25,21 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { listCampaigns, updateCampaign } from '@/lib/api/campaigns'
+import { generateDeliverables } from '@/lib/api/deliverables'
 import { listCompanies } from '@/lib/api/companies'
 import { listStatuses } from '@/lib/api/statuses'
 import { campaignPaymentStatus, collectionSortValue } from '@/lib/collection'
 import { calcCommission } from '@/lib/commission'
 import { formatDateShort, todayIso } from '@/lib/dates'
+import { formatMonth, monthOptions } from '@/lib/periods'
 import { CURRENCIES, type Currency } from '@/lib/money'
+import { cn } from '@/lib/utils'
 import type { CampaignListRow } from '@/types'
 
 const ALL = 'todas'
+
+/** El listado no cambia entre renders. */
+const MESES = monthOptions()
 
 export default function CampaignsPage() {
   const navigate = useNavigate()
@@ -55,18 +61,35 @@ export default function CampaignsPage() {
 
   /** Guarda un cambio hecho desde la tabla sin salir de la lista. */
   const edit = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       patch,
     }: {
       id: string
-      patch: { name?: string; status_id?: string; commission_paid?: boolean }
-    }) => updateCampaign(id, patch),
-    onSuccess: (_result, { id }) => {
+      patch: {
+        name?: string
+        status_id?: string
+        commission_paid?: boolean
+        close_month?: string | null
+      }
+    }) => {
+      await updateCampaign(id, patch)
+      // Capturar el mes de cierre significa que el trato se ganó: es el momento
+      // de generar las piezas por entregar. Una campaña cancelada nunca llega aquí.
+      if (patch.close_month) return generateDeliverables(id)
+      return []
+    },
+    onSuccess: (created, { id }) => {
       void queryClient.invalidateQueries({ queryKey: ['campaigns'] })
       void queryClient.invalidateQueries({ queryKey: ['campaign', id] })
       void queryClient.invalidateQueries({ queryKey: ['home'] })
-      toast.success('Campaña actualizada.')
+      void queryClient.invalidateQueries({ queryKey: ['report'] })
+      void queryClient.invalidateQueries({ queryKey: ['deliverables'] })
+      toast.success(
+        Array.isArray(created) && created.length > 0
+          ? `Campaña actualizada. Se generaron ${created.length} entregables.`
+          : 'Campaña actualizada.',
+      )
     },
     onError: (error: Error) => toast.error(error.message),
   })
@@ -130,6 +153,45 @@ export default function CampaignsPage() {
                 >
                   <StatusBadge label={status.name} color={status.color} />
                   {status.id === row.status?.id && <Check className="size-4 text-plum" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
+    {
+      key: 'close_month',
+      header: 'Mes de cierre',
+      sortValue: (row) => row.close_month ?? '',
+      cell: (row) => (
+        <div onClick={(event) => event.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label={`Mes de cierre de ${row.name}. Clic para cambiarlo.`}
+              className={cn(
+                'rounded-sm px-1 py-0.5 text-left whitespace-nowrap hover:bg-surface-2',
+                'focus-visible:ring-2 focus-visible:ring-plum focus-visible:outline-none',
+                !row.close_month && 'text-ink-muted',
+              )}
+            >
+              {row.close_month ? formatMonth(row.close_month) : 'Sin cerrar'}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="max-h-[320px] w-auto min-w-[180px] overflow-y-auto">
+              <DropdownMenuItem
+                onSelect={() => edit.mutate({ id: row.id, patch: { close_month: null } })}
+                className="text-ink-muted"
+              >
+                Sin cerrar
+              </DropdownMenuItem>
+              {MESES.map((mes) => (
+                <DropdownMenuItem
+                  key={mes.value}
+                  onSelect={() => edit.mutate({ id: row.id, patch: { close_month: mes.value } })}
+                  className="justify-between gap-3"
+                >
+                  {mes.label}
+                  {mes.value === row.close_month && <Check className="size-4 text-plum" />}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

@@ -262,13 +262,16 @@ export default function ReportsPage() {
   )
 }
 
-/** Mismo criterio que el RPC: publish_date, y si falta, la fecha de alta. */
+/**
+ * Mismo criterio que el RPC: el mes de cierre. Una campaña sin mes de cierre
+ * no pertenece a ningún periodo, porque el trato todavía no se concretó.
+ */
 function inPeriod(campaigns: CampaignListRow[], summary: ReportSummary): CampaignListRow[] {
   const { from, to } = summary.period
-  return campaigns.filter((campaign) => {
-    const date = campaign.publish_date ?? campaign.created_at.slice(0, 10)
-    return date >= from && date <= to
-  })
+  const desde = `${from.slice(0, 7)}-01`
+  return campaigns.filter(
+    (campaign) => campaign.close_month !== null && campaign.close_month >= desde && campaign.close_month <= to,
+  )
 }
 
 function slug(text: string): string {
