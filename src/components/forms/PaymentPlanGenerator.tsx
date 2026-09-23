@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Plus, Trash2, Wand2 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -33,21 +34,28 @@ export function PaymentPlanGenerator({
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: getSettings })
   const presets = settings ? readPresets(settings) : []
   const [presetKey, setPresetKey] = useState('')
+  const [businessDays, setBusinessDays] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const base = baseDate || todayIso()
 
-  function apply(key: string) {
+  function apply(key: string, useBusinessDays = businessDays) {
     setPresetKey(key)
     const preset = presets.find((item) => item.key === key)
     if (!preset) return
     try {
-      onChange(generatePaymentPlan(preset, base, total))
+      onChange(generatePaymentPlan(preset, base, total, { businessDays: useBusinessDays }))
       onPresetLabelChange?.(preset.label)
       setError(null)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudo generar el plan.')
     }
+  }
+
+  /** Cambiar el modo de conteo rehace el plan si ya hay un plazo elegido. */
+  function toggleBusinessDays(next: boolean) {
+    setBusinessDays(next)
+    if (presetKey) apply(presetKey, next)
   }
 
   function update(index: number, patch: Partial<PlanRow>) {
@@ -72,6 +80,18 @@ export function PaymentPlanGenerator({
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-1 pb-2">
+          <label className="flex items-center gap-2 text-[14px]">
+            <Checkbox
+              checked={businessDays}
+              onCheckedChange={(value) => toggleBusinessDays(value === true)}
+            />
+            Contar en días hábiles
+          </label>
+          <p className="text-[13px] text-ink-muted">
+            Salta fines de semana y feriados oficiales de México.
+          </p>
         </div>
         {presetKey && (
           <Button variant="outline" onClick={() => apply(presetKey)}>

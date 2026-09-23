@@ -97,6 +97,9 @@ export function CampaignFieldsForm({
               onValueChange={(id) => onChange({ status_id: id === NONE ? null : id })}>
               <SelectTrigger id="campaign-status"><SelectValue placeholder="Por defecto" /></SelectTrigger>
               <SelectContent>
+                {/* Sin esta opción el centinela no casa con ningún ítem y el
+                    selector se ve vacío, igual que el bug de la tabla. */}
+                <SelectItem value={NONE}>Por defecto</SelectItem>
                 {statuses.map((status) => (
                   <SelectItem key={status.id} value={status.id}>{status.name}</SelectItem>
                 ))}

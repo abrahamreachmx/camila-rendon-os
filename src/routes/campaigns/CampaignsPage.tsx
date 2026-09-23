@@ -15,6 +15,13 @@ import {
 } from '@/components/data/StatusBadge'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { listCampaigns, updateCampaign } from '@/lib/api/campaigns'
@@ -48,8 +55,13 @@ export default function CampaignsPage() {
 
   /** Guarda un cambio hecho desde la tabla sin salir de la lista. */
   const edit = useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: { name?: string; status_id?: string } }) =>
-      updateCampaign(id, patch),
+    mutationFn: ({
+      id,
+      patch,
+    }: {
+      id: string
+      patch: { name?: string; status_id?: string; commission_paid?: boolean }
+    }) => updateCampaign(id, patch),
     onSuccess: (_result, { id }) => {
       void queryClient.invalidateQueries({ queryKey: ['campaigns'] })
       void queryClient.invalidateQueries({ queryKey: ['campaign', id] })
@@ -95,23 +107,33 @@ export default function CampaignsPage() {
       header: 'Estatus',
       sortValue: (row) => row.status?.name ?? '',
       cell: (row) => (
-        <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
-          {row.status && <StatusBadge label={row.status.name} color={row.status.color} />}
-          <Select
-            value={row.status?.id ?? ''}
-            onValueChange={(status_id) => edit.mutate({ id: row.id, patch: { status_id } })}
-          >
-            {/* Sólo el chevron: la insignia de al lado ya dice el estatus. */}
-            <SelectTrigger
-              className="size-8 shrink-0 justify-center p-0"
-              aria-label={`Cambiar el estatus de ${row.name}`}
-            />
-            <SelectContent>
+        <div onClick={(event) => event.stopPropagation()}>
+          <DropdownMenu>
+            {/* La insignia misma abre el menú: un clic encima y salen las opciones. */}
+            <DropdownMenuTrigger
+              aria-label={`Estatus de ${row.name}. Clic para cambiarlo.`}
+              className="rounded-full focus-visible:ring-2 focus-visible:ring-plum focus-visible:outline-none"
+            >
+              {row.status ? (
+                <StatusBadge label={row.status.name} color={row.status.color} />
+              ) : (
+                <StatusBadge label="Sin estatus" color="#8B8079" />
+              )}
+            </DropdownMenuTrigger>
+            {/* w-auto suelta el ancho del disparador, que es angosto. */}
+            <DropdownMenuContent align="start" className="w-auto min-w-[220px]">
               {statuses.map((status) => (
-                <SelectItem key={status.id} value={status.id}>{status.name}</SelectItem>
+                <DropdownMenuItem
+                  key={status.id}
+                  onSelect={() => edit.mutate({ id: row.id, patch: { status_id: status.id } })}
+                  className="justify-between gap-3"
+                >
+                  <StatusBadge label={status.name} color={status.color} />
+                  {status.id === row.status?.id && <Check className="size-4 text-plum" />}
+                </DropdownMenuItem>
               ))}
-            </SelectContent>
-          </Select>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ),
     },
@@ -155,13 +177,27 @@ export default function CampaignsPage() {
       hideOnMobile: true,
       sortValue: (row) => calcCommission(Number(row.net_amount), Number(row.commission_pct)) * Number(row.fx_rate_mxn),
       cell: (row) => (
-        <span className="inline-flex items-center gap-1.5">
-          <MoneyCell
-            amount={calcCommission(Number(row.net_amount), Number(row.commission_pct))}
-            currency={row.currency as Currency}
+        <MoneyCell
+          amount={calcCommission(Number(row.net_amount), Number(row.commission_pct))}
+          currency={row.currency as Currency}
+        />
+      ),
+    },
+    {
+      key: 'commission_paid',
+      header: 'Comisión pagada',
+      hideOnMobile: true,
+      sortValue: (row) => (row.commission_paid ? 1 : 0),
+      cell: (row) => (
+        <div onClick={(event) => event.stopPropagation()}>
+          <Checkbox
+            checked={row.commission_paid}
+            aria-label={`Comisión de ${row.name} pagada`}
+            onCheckedChange={(value) =>
+              edit.mutate({ id: row.id, patch: { commission_paid: value === true } })
+            }
           />
-          {row.commission_paid && <Check className="size-3.5 text-paid" aria-label="Comisión pagada" />}
-        </span>
+        </div>
       ),
     },
     {

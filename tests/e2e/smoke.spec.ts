@@ -44,6 +44,12 @@ test('login, nueva campaña, plan 50/50 y aparición en Inicio', async ({ page }
 
   const montos = page.locator('input[aria-label^="Monto del cobro"]')
   await expect(montos).toHaveCount(2)
+
+  // Las fechas se leen del generador y no se recalculan aquí: dependen de si
+  // el plan se contó en días hábiles o naturales, y esa casilla puede cambiar.
+  const fechasDelPlan = await page
+    .locator('input[aria-label^="Vencimiento del cobro"]')
+    .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value))
   await expect(montos.first()).toHaveValue('10000')
   await expect(montos.nth(1)).toHaveValue('10000')
 
@@ -54,10 +60,11 @@ test('login, nueva campaña, plan 50/50 y aparición en Inicio', async ({ page }
   await expect(page.getByRole('heading', { name: CAMPAIGN })).toBeVisible()
 
   // --- los dos cobros salen en el calendario del Inicio ---
-  // El plan 50/50 parte de hoy+3, así que el segundo cobro cae 30 días después
-  // y puede quedar en otro mes. Se abre el calendario en el mes de cada cobro.
+  // El plan 50/50 parte de la fecha de firma, así que el segundo cobro cae
+  // semanas después y puede quedar en otro mes. Se abre el calendario en el
+  // mes de cada cobro.
   const enlace = `a[href="/campanas/${campaignUrl.split('/').pop()}"]`
-  for (const fecha of [isoInDays(3), isoInDays(33)]) {
+  for (const fecha of fechasDelPlan) {
     const [anio, mes] = fecha.split('-')
     await page.goto(`/?anio=${Number(anio)}&mes=${Number(mes)}`)
     const calendario = page.locator('section[aria-label="Calendario de cobros"]')
