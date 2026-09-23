@@ -4,9 +4,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import {
-  currentMonth, currentQuarter, customRange, nextRange, previousRange,
+  currentMonth, currentQuarter, currentYear, customRange, nextRange, previousRange,
   type PeriodRange, type PeriodType,
 } from '@/lib/periods'
+
+const PERIOD_LABEL: Record<PeriodType, string> = {
+  mes: 'Mes',
+  trimestre: 'Trimestre',
+  anio: 'Año',
+  rango: 'Rango',
+}
 
 export function PeriodPicker({
   range,
@@ -19,23 +26,24 @@ export function PeriodPicker({
     if (type === range.type) return
     if (type === 'mes') onChange(currentMonth())
     else if (type === 'trimestre') onChange(currentQuarter())
+    else if (type === 'anio') onChange(currentYear())
     else onChange(customRange(range.from, range.to))
   }
 
   return (
     <div className="mb-6 flex flex-wrap items-end gap-4">
       <div className="inline-flex rounded-sm border border-line bg-surface p-0.5">
-        {(['mes', 'trimestre', 'rango'] as const).map((type) => (
+        {(['mes', 'trimestre', 'anio', 'rango'] as const).map((type) => (
           <button
             key={type}
             type="button"
             onClick={() => setType(type)}
             className={cn(
-              'rounded-sm px-3 py-1.5 text-[14px] capitalize transition-colors',
+              'rounded-sm px-3 py-1.5 text-[14px] transition-colors',
               range.type === type ? 'bg-plum text-white' : 'text-ink hover:bg-surface-2',
             )}
           >
-            {type === 'mes' ? 'Mes' : type === 'trimestre' ? 'Trimestre' : 'Rango'}
+            {PERIOD_LABEL[type]}
           </button>
         ))}
       </div>

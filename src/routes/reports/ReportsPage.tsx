@@ -16,9 +16,10 @@ import { getSettings, readSalesGoals } from '@/lib/api/settings'
 import { calcCommission } from '@/lib/commission'
 import { goalForYear, monthlyTarget } from '@/lib/goals'
 import { downloadCsv, toCsv, type CsvColumn } from '@/lib/csv'
-import { formatDateLong, formatDateShort } from '@/lib/dates'
+import { formatDateLong, formatDateShort, todayIso } from '@/lib/dates'
 import { formatMoney, toMxn, type Currency } from '@/lib/money'
 import { currentMonth, previousRange, type PeriodRange } from '@/lib/periods'
+import { GoalCell } from '@/routes/home/GoalProgressPanel'
 import { KpiGrid } from '@/routes/reports/KpiGrid'
 import { PeriodPicker } from '@/routes/reports/PeriodPicker'
 import { CollectionsChart, MonthlySalesChart, TopCompaniesChart } from '@/routes/reports/ReportCharts'
@@ -190,6 +191,21 @@ export default function ReportsPage() {
         <LoadingRows rows={6} />
       ) : (
         <div className="space-y-8">
+          {!opened && range.type === 'anio' && settings && (
+            // En el año la pregunta es cuánto falta para la meta: va antes que los KPIs.
+            <section aria-label="Avance contra la meta anual" className="overflow-hidden rounded-lg border border-line">
+              <GoalCell
+                title={`Meta de ${range.label}`}
+                goals={readSalesGoals(settings)}
+                range={range}
+                actual={Number(summary.sales.net_mxn)}
+                today={todayIso()}
+                noun="el año"
+                showProjection
+              />
+            </section>
+          )}
+
           <KpiGrid summary={summary} previous={comparison} />
 
           <div className="grid gap-4 lg:grid-cols-2">

@@ -8,6 +8,7 @@ import {
   nextRange,
   previousRange,
   quarterRange,
+  yearRange,
 } from '@/lib/periods'
 
 describe('monthRange', () => {
@@ -91,5 +92,16 @@ describe('deltaPct', () => {
   it('sin base de comparación devuelve null', () => {
     expect(deltaPct(100, 0)).toBeNull()
     expect(deltaPct(0, 0)).toBe(0)
+  })
+})
+
+describe('yearRange', () => {
+  it('cubre del 1 de enero al 31 de diciembre', () => {
+    expect(yearRange(2026)).toEqual({ type: 'anio', from: '2026-01-01', to: '2026-12-31', label: '2026' })
+  })
+
+  it('se mueve de año en año', () => {
+    expect(previousRange(yearRange(2026)).label).toBe('2025')
+    expect(nextRange(yearRange(2026)).from).toBe('2027-01-01')
   })
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { campaignPaymentStatus, collectionSortValue } from '@/lib/collection'
-import type { PaymentBrief } from '@/types'
+import { campaignPaymentStatus, collectionSortValue, summarizeMonthIncome } from '@/lib/collection'
+import type { PaymentBrief, PaymentWithCampaign } from '@/types'
 
 const HOY = '2026-09-21'
 
@@ -171,5 +171,42 @@ describe('collectionSortValue', () => {
       HOY,
     )
     expect(collectionSortValue(poco)).toBeLessThan(collectionSortValue(mucho))
+  })
+})
+
+describe('summarizeMonthIncome', () => {
+  function pago(amount: number, currency: string, fx: number, patch: Partial<PaymentWithCampaign> = {}) {
+    return {
+      id: String(Math.random()),
+      amount,
+      status: 'pendiente',
+      due_date: '2026-09-28',
+      campaign: { id: 'c', name: 'C', currency, fx_rate_mxn: fx, company: null },
+      ...patch,
+    } as PaymentWithCampaign
+  }
+
+  it('separa esperado, cobrado y por cobrar, por moneda y en pesos', () => {
+    const r = summarizeMonthIncome(
+      [
+        pago(10_000, 'MXN', 1, { status: 'pagado' }),
+        pago(5_000, 'MXN', 1),
+        pago(1_000, 'USD', 18.5),
+      ],
+      HOY,
+    )
+    expect(r.byCurrency).toEqual([
+      { currency: 'MXN', expected: 15_000, paid: 10_000, pending: 5_000 },
+      { currency: 'USD', expected: 1_000, paid: 0, pending: 1_000 },
+    ])
+    expect(r.mxn).toEqual({ expected: 33_500, paid: 10_000, pending: 23_500 })
+    expect(r.overdueCount).toBe(0)
+  })
+
+  it('cuenta los vencidos y no se rompe sin cobros', () => {
+    expect(summarizeMonthIncome([pago(100, 'MXN', 1, { due_date: '2026-09-02' })], HOY).overdueCount).toBe(1)
+    expect(summarizeMonthIncome([], HOY)).toEqual({
+      byCurrency: [], mxn: { expected: 0, paid: 0, pending: 0 }, overdueCount: 0,
+    })
   })
 })

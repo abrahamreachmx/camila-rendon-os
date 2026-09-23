@@ -4,6 +4,7 @@ import { Check, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useNavigate, useSearchParams } from 'react-router'
 import { DataTable, type Column } from '@/components/data/DataTable'
+import { EditableMoneyCell } from '@/components/data/EditableMoneyCell'
 import { EditableTextCell } from '@/components/data/EditableTextCell'
 import { EmptyState } from '@/components/data/EmptyState'
 import { LoadingRows } from '@/components/data/LoadingRows'
@@ -71,6 +72,8 @@ export default function CampaignsPage() {
         status_id?: string
         commission_paid?: boolean
         close_month?: string | null
+        gross_amount?: number
+        gross_manual?: boolean
       }
     }) => {
       await updateCampaign(id, patch)
@@ -223,7 +226,18 @@ export default function CampaignsPage() {
       align: 'right',
       hideOnMobile: true,
       sortValue: (row) => Number(row.gross_amount) * Number(row.fx_rate_mxn),
-      cell: (row) => <MoneyCell amount={row.gross_amount} currency={row.currency as Currency} />,
+      // El bruto se captura a mano: cada país trae su IVA y sus retenciones, no hay
+      // fórmula que sirva para todos. Marcarlo manual evita que editar servicios lo pise.
+      cell: (row) => (
+        <EditableMoneyCell
+          value={Number(row.gross_amount)}
+          currency={row.currency as Currency}
+          label={`Bruto de ${row.name}`}
+          onSave={(gross_amount) =>
+            edit.mutate({ id: row.id, patch: { gross_amount, gross_manual: true } })
+          }
+        />
+      ),
     },
     {
       key: 'net',
