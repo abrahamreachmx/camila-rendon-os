@@ -3,9 +3,9 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { DataTable, type Column } from '@/components/data/DataTable'
+import { EditableMoneyCell } from '@/components/data/EditableMoneyCell'
 import { EmptyState } from '@/components/data/EmptyState'
 import { LoadingRows } from '@/components/data/LoadingRows'
-import { MoneyCell } from '@/components/data/MoneyCell'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { createService, deleteService, listServices, reorderServices, updateService } from '@/lib/api/services'
@@ -15,13 +15,17 @@ import { ServiceDialog } from '@/routes/settings/tabs/ServiceDialog'
 
 export function ServicesTab() {
   const queryClient = useQueryClient()
-  const [editing, setEditing] = useState<Service | null>(null)
+  // Se guarda el id, no la fila: así el diálogo siempre abre con los datos
+  // frescos de la caché y no pisa una tarifa editada en línea.
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
 
   const { data: services = [], isPending } = useQuery({
     queryKey: ['services'],
     queryFn: () => listServices(),
   })
+
+  const editing = editingId ? (services.find((item) => item.id === editingId) ?? null) : null
 
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: ['services'] })
@@ -30,6 +34,14 @@ export function ServicesTab() {
   const toggleActive = useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) => updateService(id, { active }),
     onSuccess: refresh,
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  /** Edición en línea de la tarifa: sólo toca el precio, nada más del servicio. */
+  const savePrice = useMutation({
+    mutationFn: ({ id, default_price }: { id: string; default_price: number }) =>
+      updateService(id, { default_price }),
+    onSuccess: () => { refresh(); toast.success('Tarifa actualizada.') },
     onError: (error: Error) => toast.error(error.message),
   })
 
@@ -57,7 +69,7 @@ export function ServicesTab() {
         : createService({ ...input, sort_order: services.length + 1 }),
     onSuccess: () => {
       refresh()
-      setEditing(null)
+      setEditingId(null)
       setCreating(false)
       toast.success('Servicio guardado.')
     },
@@ -70,7 +82,7 @@ export function ServicesTab() {
       header: 'Servicio',
       sortValue: (row) => row.name,
       cell: (row) => (
-        <button type="button" className="text-left hover:text-plum" onClick={() => setEditing(row)}>
+        <button type="button" className="text-left hover:text-plum" onClick={() => setEditingId(row.id)}>
           <span className="font-medium">{row.name}</span>
           {row.description && <span className="block text-[13px] text-ink-muted">{row.description}</span>}
         </button>
@@ -81,7 +93,14 @@ export function ServicesTab() {
       header: 'Tarifa',
       align: 'right',
       sortValue: (row) => Number(row.default_price),
-      cell: (row) => <MoneyCell amount={row.default_price} currency={row.currency as Currency} />,
+      cell: (row) => (
+        <EditableMoneyCell
+          value={Number(row.default_price)}
+          currency={row.currency as Currency}
+          label={`Tarifa de ${row.name}`}
+          onSave={(default_price) => savePrice.mutate({ id: row.id, default_price })}
+        />
+      ),
     },
     {
       key: 'paid_media',
@@ -154,9 +173,9 @@ export function ServicesTab() {
 
       <ServiceDialog
         open={creating || editing !== null}
-        service={editing}
+        service={editing ?? null}
         saving={save.isPending}
-        onClose={() => { setCreating(false); setEditing(null) }}
+        onClose={() => { setCreating(false); setEditingId(null) }}
         onSave={(input) => save.mutate(input)}
       />
     </div>

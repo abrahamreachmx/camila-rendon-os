@@ -1,4 +1,5 @@
 import { addDaysIso, type IsoDate } from '@/lib/dates'
+import { addBusinessDaysIso } from '@/lib/holidays'
 import { round2 } from '@/lib/money'
 
 export type PaymentPreset = {
@@ -19,11 +20,16 @@ export type PlanRow = {
  * El reparto se redondea a 2 decimales y **la última fila absorbe la diferencia**,
  * de modo que la suma de las filas es exactamente `total` y nunca sobra ni falta
  * un centavo. Los porcentajes deben sumar 100.
+ *
+ * Con `businessDays` los plazos se cuentan en días hábiles: saltan fines de
+ * semana y feriados oficiales de México. El default es días naturales, que es
+ * como se comportaba antes; quien decide es la interfaz.
  */
 export function generatePaymentPlan(
   preset: PaymentPreset,
   baseDate: IsoDate,
   total: number,
+  options: { businessDays?: boolean } = {},
 ): PlanRow[] {
   if (!preset.parts || preset.parts.length === 0) {
     throw new Error('El plazo de pago no tiene partes definidas.')
@@ -43,7 +49,9 @@ export function generatePaymentPlan(
     const amount = isLast ? round2(roundedTotal - assigned) : round2((roundedTotal * part.pct) / 100)
     assigned = round2(assigned + amount)
     rows.push({
-      due_date: addDaysIso(baseDate, part.days),
+      due_date: options.businessDays
+        ? addBusinessDaysIso(baseDate, part.days)
+        : addDaysIso(baseDate, part.days),
       amount,
       sort_order: index + 1,
     })

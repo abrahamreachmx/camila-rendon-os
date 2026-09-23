@@ -32,11 +32,15 @@ values (
 );
 
 -- -------------------------------------------------------- campaign_statuses
+-- Sólo Ejecutada y Cancelada son finales de una campaña: is_closed alimenta el
+-- conteo de campañas cerradas y el de marcas que se volvieron clientes.
 insert into campaign_statuses (id, name, color, sort_order, is_default, is_closed) values
   ('11111111-0000-4000-8000-000000000001', 'En aprobación',         '#C08A2E', 1, true,  false),
-  ('11111111-0000-4000-8000-000000000002', 'Pendiente de ejecutar', '#6B2D4F', 2, false, false),
-  ('11111111-0000-4000-8000-000000000003', 'Ejecutada',             '#3E7C5A', 3, false, true),
-  ('11111111-0000-4000-8000-000000000004', 'Cancelada',             '#8B8079', 4, false, true);
+  ('11111111-0000-4000-8000-000000000005', 'Script en aprobación',  '#3F5F8A', 2, false, false),
+  ('11111111-0000-4000-8000-000000000002', 'Pendiente de ejecutar', '#6B2D4F', 3, false, false),
+  ('11111111-0000-4000-8000-000000000006', 'Pendiente de publicar', '#7E9276', 4, false, false),
+  ('11111111-0000-4000-8000-000000000003', 'Ejecutada',             '#3E7C5A', 5, false, true),
+  ('11111111-0000-4000-8000-000000000004', 'Cancelada',             '#8B8079', 6, false, true);
 
 -- ---------------------------------------------------------------- services
 insert into services (id, name, default_price, currency, paid_media_default, description, active, sort_order) values

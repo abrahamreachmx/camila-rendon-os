@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { isBusinessDay } from '@/lib/holidays'
+import { sumBy } from '@/lib/money'
 import {
   generatePaymentPlan,
   mergePlanKeepingPaid,
@@ -132,5 +134,46 @@ describe('remainingToCollect', () => {
 
   it('sin pagos devuelve el total', () => {
     expect(remainingToCollect(24000, [])).toBe(24000)
+  })
+})
+
+describe('generatePaymentPlan en días hábiles', () => {
+  const a30: PaymentPreset = { key: 'a30', label: '30 días', parts: [{ pct: 100, days: 30 }] }
+  const habiles = { businessDays: true }
+
+  it('treinta días hábiles desde un viernes caen seis semanas después', () => {
+    // 2026-09-18 es viernes; sin feriados de por medio son 42 días naturales.
+    expect(generatePaymentPlan(a30, '2026-09-18', 1000, habiles)[0].due_date).toBe('2026-10-30')
+  })
+
+  it('salta el lunes de asueto de noviembre', () => {
+    const uno: PaymentPreset = { key: 'a1', label: '1 día', parts: [{ pct: 100, days: 1 }] }
+    // Del viernes 13 el siguiente hábil sería el lunes 16, pero es día de asueto.
+    expect(generatePaymentPlan(uno, '2026-11-13', 500, habiles)[0].due_date).toBe('2026-11-17')
+  })
+
+  it('un plazo de contado sobre un sábado se recorre al lunes', () => {
+    expect(generatePaymentPlan(contado, '2026-09-19', 500, habiles)[0].due_date).toBe('2026-09-21')
+  })
+
+  it('ninguna fecha generada cae en sábado, domingo ni feriado', () => {
+    for (const preset of [contado, a30, a60, a90, mitades, tercios]) {
+      for (const base of ['2026-09-18', '2026-11-13', '2026-12-24', '2027-01-01']) {
+        for (const row of generatePaymentPlan(preset, base, 9000, habiles)) {
+          expect(isBusinessDay(row.due_date), `${preset.key} desde ${base}: ${row.due_date}`).toBe(true)
+        }
+      }
+    }
+  })
+
+  it('el reparto del dinero no cambia al contar en hábiles', () => {
+    const naturales = generatePaymentPlan(tercios, '2026-09-18', 1000)
+    const conHabiles = generatePaymentPlan(tercios, '2026-09-18', 1000, habiles)
+    expect(conHabiles.map((r) => r.amount)).toEqual(naturales.map((r) => r.amount))
+    expect(sumBy(conHabiles, (r) => r.amount)).toBe(1000)
+  })
+
+  it('sin la opción sigue contando días naturales', () => {
+    expect(generatePaymentPlan(a30, '2026-09-18', 1000)[0].due_date).toBe('2026-10-18')
   })
 })
