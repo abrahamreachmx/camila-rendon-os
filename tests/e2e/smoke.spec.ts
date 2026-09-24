@@ -50,8 +50,11 @@ test('login, nueva campaña, plan 50/50 y aparición en Inicio', async ({ page }
   const fechasDelPlan = await page
     .locator('input[aria-label^="Vencimiento del cobro"]')
     .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value))
-  await expect(montos.first()).toHaveValue('10000')
-  await expect(montos.nth(1)).toHaveValue('10000')
+  // Campaña en pesos: el plan se arma sobre el total a facturar (RESICO),
+  // 20,000 + IVA 3,200 − retención ISR 250 = 22,950, mitad y mitad.
+  await expect(page.getByTestId('items-total')).toHaveText('$22,950.00')
+  await expect(montos.first()).toHaveValue('11475')
+  await expect(montos.nth(1)).toHaveValue('11475')
 
   await page.click('button:has-text("Crear campaña")')
   await expect(page).toHaveURL(/\/campanas\/[0-9a-f-]{36}/)
