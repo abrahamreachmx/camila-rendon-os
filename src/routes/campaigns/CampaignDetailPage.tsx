@@ -17,6 +17,7 @@ import { deleteCampaign, getCampaign, updateCampaign } from '@/lib/api/campaigns
 import { listStatuses } from '@/lib/api/statuses'
 import { calcCommission } from '@/lib/commission'
 import { formatMoney, type Currency } from '@/lib/money'
+import { resicoBreakdown } from '@/lib/taxes'
 import { CampaignInvoicesTab } from '@/routes/campaigns/tabs/InvoicesTab'
 import { CampaignPaymentsTab } from '@/routes/campaigns/tabs/PaymentsTab'
 import { CampaignDeliverablesTab } from '@/routes/campaigns/tabs/DeliverablesTab'
@@ -98,7 +99,7 @@ export default function CampaignDetailPage() {
         }
       />
 
-      <dl className="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
+      <dl className={`${currency === 'MXN' ? 'mb-2' : 'mb-6'} grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4`}>
         <Total label="Bruto" value={formatMoney(Number(campaign.gross_amount), currency)} />
         <Total label="Neto" value={formatMoney(Number(campaign.net_amount), currency)} strong />
         <Total label={`Comisión (${Number(campaign.commission_pct)} %)`} value={formatMoney(commission, currency)} />
@@ -107,6 +108,7 @@ export default function CampaignDetailPage() {
           value={currency === 'MXN' ? 'MXN' : `${currency} · ${Number(campaign.fx_rate_mxn)} MXN`}
         />
       </dl>
+      {currency === 'MXN' && <ResicoLine campaign={campaign} currency={currency} />}
 
       <Tabs defaultValue="resumen">
         <TabsList className="mb-6 flex-wrap">
@@ -148,5 +150,28 @@ function Total({ label, value, strong }: { label: string; value: string; strong?
       <dt className="text-[13px] text-ink-muted">{label}</dt>
       <dd className={`tabular-nums ${strong ? 'font-heading text-[20px]' : 'text-[17px]'}`}>{value}</dd>
     </div>
+  )
+}
+
+/**
+ * De dónde sale el bruto en pesos. Si Ana lo capturó a mano (o es histórico),
+ * se dice en vez de mostrar un desglose que no cuadraría con la cifra.
+ */
+function ResicoLine({
+  campaign,
+  currency,
+}: {
+  campaign: { net_amount: number; gross_manual: boolean }
+  currency: Currency
+}) {
+  if (campaign.gross_manual) {
+    return <p className="mb-6 text-[13px] text-ink-muted">Bruto fijo: capturado a mano o histórico.</p>
+  }
+  const t = resicoBreakdown(Number(campaign.net_amount))
+  return (
+    <p className="mb-6 text-[13px] text-ink-muted tabular-nums">
+      Neto {formatMoney(t.subtotal, currency)} + IVA 16 % {formatMoney(t.iva, currency)} − retención ISR 1.25 %{' '}
+      {formatMoney(t.isrRetention, currency)} = {formatMoney(t.total, currency)}
+    </p>
   )
 }

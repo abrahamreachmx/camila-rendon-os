@@ -5,13 +5,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatMoney, round2, sumBy, type Currency } from '@/lib/money'
+import { resicoBreakdown } from '@/lib/taxes'
 import type { CampaignItemInput, Service } from '@/types'
 
 const FREE_LINE = 'libre'
 
 /**
- * Desglose de servicios con totales en vivo. El bruto que se ve aquí es el
- * mismo que calculará el trigger al guardar: `sum(round(cantidad × precio))`.
+ * Desglose de servicios con totales en vivo. El subtotal es el mismo que
+ * calculará el trigger al guardar: `sum(round(cantidad × precio))`. En pesos se
+ * agrega el desglose RESICO (IVA − retención de ISR), que da el bruto.
  */
 export function CampaignItemsEditor({
   items,
@@ -51,7 +53,8 @@ export function CampaignItemsEditor({
     ])
   }
 
-  const gross = sumBy(items, (item) => round2(item.quantity * item.unit_price))
+  const subtotal = sumBy(items, (item) => round2(item.quantity * item.unit_price))
+  const taxes = currency === 'MXN' ? resicoBreakdown(subtotal) : null
 
   return (
     <div className="space-y-3">
@@ -116,12 +119,35 @@ export function CampaignItemsEditor({
             </tbody>
             <tfoot>
               <tr className="border-t border-line bg-surface-2">
-                <td colSpan={3} className="px-3 py-2.5 text-right font-semibold">Bruto</td>
+                <td colSpan={3} className="px-3 py-2.5 text-right font-semibold">
+                  {taxes ? 'Subtotal (neto)' : 'Total'}
+                </td>
                 <td data-testid="items-gross" className="px-3 py-2.5 text-right font-semibold tabular-nums">
-                  {formatMoney(gross, currency)}
+                  {formatMoney(subtotal, currency)}
                 </td>
                 <td />
               </tr>
+              {taxes && (
+                <>
+                  <tr className="bg-surface-2 text-ink-muted">
+                    <td colSpan={3} className="px-3 py-1.5 text-right">IVA 16 %</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums">+ {formatMoney(taxes.iva, currency)}</td>
+                    <td />
+                  </tr>
+                  <tr className="bg-surface-2 text-ink-muted">
+                    <td colSpan={3} className="px-3 py-1.5 text-right">Retención ISR 1.25 % (RESICO)</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums">− {formatMoney(taxes.isrRetention, currency)}</td>
+                    <td />
+                  </tr>
+                  <tr className="border-t border-line bg-surface-2">
+                    <td colSpan={3} className="px-3 py-2.5 text-right font-semibold">Total a facturar (bruto)</td>
+                    <td data-testid="items-total" className="px-3 py-2.5 text-right font-semibold tabular-nums">
+                      {formatMoney(taxes.total, currency)}
+                    </td>
+                    <td />
+                  </tr>
+                </>
+              )}
             </tfoot>
           </table>
         </div>

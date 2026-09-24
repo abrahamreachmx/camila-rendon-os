@@ -16,6 +16,7 @@ import { deletePayment, replacePlan, updatePayment } from '@/lib/api/payments'
 import { formatDateLong, isOverdue } from '@/lib/dates'
 import { round2, sumBy, type Currency } from '@/lib/money'
 import { remainingToCollect, type PlanRow } from '@/lib/paymentPlan'
+import { collectibleAmount } from '@/lib/taxes'
 import type { CampaignWithRelations, PaymentStatus } from '@/types'
 
 export function CampaignPaymentsTab({
@@ -32,8 +33,10 @@ export function CampaignPaymentsTab({
 
   useEffect(() => { setPlan([]) }, [campaign.id])
 
-  const net = Number(campaign.net_amount)
-  const pending = remainingToCollect(net, campaign.payments.map((p) => ({
+  // En pesos se cobra el bruto (neto + IVA − retención); en otras monedas, el neto.
+  const collectible = collectibleAmount(campaign)
+  const baseLabel = campaign.currency === 'MXN' ? 'total a facturar' : 'neto'
+  const pending = remainingToCollect(collectible, campaign.payments.map((p) => ({
     amount: Number(p.amount), status: p.status,
   })))
 
@@ -120,9 +123,9 @@ export function CampaignPaymentsTab({
                     <MoneyCell amount={planned} currency={currency} strong />
                   </td>
                   <td colSpan={3} className="px-3 py-2.5 text-[13px] text-ink-muted">
-                    {round2(planned - net) === 0
-                      ? 'Cuadra con el neto de la campaña.'
-                      : `El neto es ${net}; hay una diferencia de ${round2(net - planned)}.`}
+                    {round2(planned - collectible) === 0
+                      ? `Cuadra con el ${baseLabel} de la campaña.`
+                      : `El ${baseLabel} es ${collectible}; hay una diferencia de ${round2(collectible - planned)}.`}
                   </td>
                 </tr>
               </tfoot>

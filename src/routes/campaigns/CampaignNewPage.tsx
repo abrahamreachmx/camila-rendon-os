@@ -13,6 +13,7 @@ import { replacePlan } from '@/lib/api/payments'
 import { listServices } from '@/lib/api/services'
 import { campaignSchema } from '@/lib/schemas/campaign'
 import { round2, sumBy } from '@/lib/money'
+import { grossFor } from '@/lib/taxes'
 import type { PlanRow } from '@/lib/paymentPlan'
 import type { CampaignItemInput } from '@/types'
 
@@ -35,7 +36,9 @@ export default function CampaignNewPage() {
     queryFn: () => listServices({ activeOnly: true }),
   })
 
-  const gross = sumBy(items, (item) => round2(item.quantity * item.unit_price))
+  const subtotal = sumBy(items, (item) => round2(item.quantity * item.unit_price))
+  // En pesos se cobra el total de la factura (con IVA y retención), no el subtotal.
+  const collectible = grossFor(subtotal, fields.currency)
 
   const create = useMutation({
     mutationFn: async () => {
@@ -78,12 +81,15 @@ export default function CampaignNewPage() {
         <section>
           <h2 className="mb-1 font-heading text-[20px]">Plan de pagos</h2>
           <p className="mb-4 text-[13px] text-ink-muted">
-            Se calcula sobre el bruto. Si negocias un neto distinto, ajústalo después en la campaña.
+            {fields.currency === 'MXN'
+              ? 'Se calcula sobre el total a facturar: neto + IVA 16 % − retención ISR 1.25 %.'
+              : 'Se calcula sobre el total de los servicios.'}{' '}
+            Si negocias un neto distinto, ajústalo después en la campaña.
           </p>
           <PaymentPlanGenerator
             rows={plan}
             onChange={setPlan}
-            total={gross}
+            total={collectible}
             currency={fields.currency}
             baseDate={fields.signed_at}
           />
