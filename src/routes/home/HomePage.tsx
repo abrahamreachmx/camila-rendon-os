@@ -4,6 +4,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 import { EmptyState } from '@/components/data/EmptyState'
 import { LoadingRows } from '@/components/data/LoadingRows'
+import { MonthlyIncomeSummary } from '@/components/data/MonthlyIncomeSummary'
 import { PaymentsCalendar } from '@/components/data/PaymentsCalendar'
 import { StatusBadge } from '@/components/data/StatusBadge'
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,7 @@ export default function HomePage() {
   const year = Number(params.get('anio') ?? now.getFullYear())
   const month = Number(params.get('mes') ?? now.getMonth() + 1)
   const range = monthRange(year, month)
+  const view = params.get('vista') === 'resumen' ? 'resumen' : 'calendario'
 
   const { data, isPending } = useQuery({ queryKey: ['home'], queryFn: getHomeData })
   const { data: payments = [] } = useQuery({
@@ -49,6 +51,13 @@ export default function HomePage() {
     queryKey: ['report', quarter.from, quarter.to],
     queryFn: () => getReportSummary(quarter.from, quarter.to),
   })
+
+  function setView(next: 'calendario' | 'resumen') {
+    const params2 = new URLSearchParams(params)
+    if (next === 'resumen') params2.set('vista', 'resumen')
+    else params2.delete('vista')
+    setParams(params2, { replace: true })
+  }
 
   /** Mueve el calendario de mes guardando la posición en la URL, igual que Cobros. */
   function move(delta: number) {
@@ -74,7 +83,25 @@ export default function HomePage() {
 
       <section aria-label="Calendario de cobros">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-heading text-[20px]">Cobros</h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="font-heading text-[20px]">Cobros</h2>
+            <div role="group" aria-label="Vista de cobros" className="inline-flex rounded-sm border border-line bg-surface p-0.5">
+              {(['calendario', 'resumen'] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={view === option}
+                  onClick={() => setView(option)}
+                  className={cn(
+                    'rounded-sm px-3 py-1 text-[13px] transition-colors',
+                    view === option ? 'bg-plum text-white' : 'text-ink hover:bg-surface-2',
+                  )}
+                >
+                  {option === 'calendario' ? 'Calendario' : 'Resumen del mes'}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={() => move(-1)} aria-label="Mes anterior">
               <ChevronLeft className="size-4" />
@@ -101,7 +128,11 @@ export default function HomePage() {
           </Link>
         )}
 
-        <PaymentsCalendar year={year} month={month} payments={payments} />
+        {view === 'resumen' ? (
+          <MonthlyIncomeSummary payments={payments} monthLabel={range.label} />
+        ) : (
+          <PaymentsCalendar year={year} month={month} payments={payments} />
+        )}
       </section>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">

@@ -1,6 +1,6 @@
 import { toIsoDate, type IsoDate } from '@/lib/dates'
 
-export type PeriodType = 'mes' | 'trimestre' | 'rango'
+export type PeriodType = 'mes' | 'trimestre' | 'anio' | 'rango'
 
 export type PeriodRange = {
   type: PeriodType
@@ -43,6 +43,10 @@ export function quarterRange(year: number, quarter: number): PeriodRange {
   }
 }
 
+export function yearRange(year: number): PeriodRange {
+  return { type: 'anio', from: `${year}-01-01`, to: `${year}-12-31`, label: String(year) }
+}
+
 export function customRange(from: IsoDate, to: IsoDate): PeriodRange {
   return { type: 'rango', from, to, label: `${from} a ${to}` }
 }
@@ -59,6 +63,8 @@ export function previousRange(range: PeriodRange): PeriodRange {
     const quarter = Math.floor((month - 1) / 3) + 1
     return quarter === 1 ? quarterRange(year - 1, 4) : quarterRange(year, quarter - 1)
   }
+
+  if (range.type === 'anio') return yearRange(Number(range.from.slice(0, 4)) - 1)
 
   // Un rango libre se desplaza hacia atrás su misma longitud.
   const fromDate = new Date(`${range.from}T00:00:00`)
@@ -81,6 +87,7 @@ export function nextRange(range: PeriodRange): PeriodRange {
     const quarter = Math.floor((month - 1) / 3) + 1
     return quarter === 4 ? quarterRange(year + 1, 1) : quarterRange(year, quarter + 1)
   }
+  if (range.type === 'anio') return yearRange(Number(range.from.slice(0, 4)) + 1)
   const fromDate = new Date(`${range.from}T00:00:00`)
   const toDate = new Date(`${range.to}T00:00:00`)
   const days = Math.round((toDate.getTime() - fromDate.getTime()) / 86_400_000) + 1
@@ -97,6 +104,10 @@ export function currentMonth(today = new Date()): PeriodRange {
 
 export function currentQuarter(today = new Date()): PeriodRange {
   return quarterRange(today.getFullYear(), Math.floor(today.getMonth() / 3) + 1)
+}
+
+export function currentYear(today = new Date()): PeriodRange {
+  return yearRange(today.getFullYear())
 }
 
 /** Delta porcentual contra el periodo anterior. `null` cuando no hay base de comparación. */

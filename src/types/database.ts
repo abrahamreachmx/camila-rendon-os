@@ -221,6 +221,7 @@ export type Database = {
           currency: string
           fx_rate_mxn: number
           gross_amount: number
+          gross_manual: boolean
           id: string
           name: string
           net_amount: number
@@ -245,6 +246,7 @@ export type Database = {
           currency?: string
           fx_rate_mxn?: number
           gross_amount?: number
+          gross_manual?: boolean
           id?: string
           name: string
           net_amount?: number
@@ -269,6 +271,7 @@ export type Database = {
           currency?: string
           fx_rate_mxn?: number
           gross_amount?: number
+          gross_manual?: boolean
           id?: string
           name?: string
           net_amount?: number

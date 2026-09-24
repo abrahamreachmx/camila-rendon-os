@@ -1,6 +1,6 @@
 import { isOverdue, todayIso, type IsoDate } from '@/lib/dates'
-import { round2, sumBy } from '@/lib/money'
-import type { PaymentBrief } from '@/types'
+import { round2, sumBy, toMxn, type Currency } from '@/lib/money'
+import type { PaymentBrief, PaymentWithCampaign } from '@/types'
 
 /** Estatus de cobro de una campaña completa: agrega los de su plan de pagos. */
 export type CollectionStatus =
@@ -106,4 +106,60 @@ const COLLECTION_RANK: Record<CollectionStatus, number> = {
 export function collectionSortValue(collection: CampaignCollection): number {
   const rank = collection.hasOverdue ? 0 : COLLECTION_RANK[collection.status]
   return rank * 1000 + collection.paidPct
+}
+
+export type IncomeTotals = { expected: number; paid: number; pending: number }
+
+export type MonthIncomeSummary = {
+  /** Por moneda, en su propia moneda, sólo las que aparecen en el mes. */
+  byCurrency: ({ currency: Currency } & IncomeTotals)[]
+  /** Todo consolidado a pesos con el tipo de cambio de cada campaña. */
+  mxn: IncomeTotals
+  overdueCount: number
+}
+
+const CURRENCY_ORDER: Currency[] = ['MXN', 'USD', 'EUR', 'COP']
+
+/**
+ * Totales de lo que debe entrar en un mes: lo esperado, lo ya cobrado y lo que
+ * falta. Sale de los mismos cobros que pinta el calendario, así que ambas
+ * vistas siempre cuadran.
+ */
+export function summarizeMonthIncome(
+  payments: readonly PaymentWithCampaign[],
+  today: IsoDate = todayIso(),
+): MonthIncomeSummary {
+  const empty = (): IncomeTotals => ({ expected: 0, paid: 0, pending: 0 })
+  const byCurrency = new Map<Currency, IncomeTotals>()
+  const mxn = empty()
+  let overdueCount = 0
+
+  for (const payment of payments) {
+    const currency = payment.campaign.currency as Currency
+    const amount = Number(payment.amount)
+    const amountMxn = toMxn(amount, Number(payment.campaign.fx_rate_mxn))
+    const paid = payment.status === 'pagado'
+    const bucket = byCurrency.get(currency) ?? empty()
+
+    bucket.expected = round2(bucket.expected + amount)
+    mxn.expected = round2(mxn.expected + amountMxn)
+    if (paid) {
+      bucket.paid = round2(bucket.paid + amount)
+      mxn.paid = round2(mxn.paid + amountMxn)
+    } else {
+      bucket.pending = round2(bucket.pending + amount)
+      mxn.pending = round2(mxn.pending + amountMxn)
+    }
+    if (isOverdue(payment.due_date, payment.status, today)) overdueCount += 1
+    byCurrency.set(currency, bucket)
+  }
+
+  return {
+    byCurrency: CURRENCY_ORDER.filter((code) => byCurrency.has(code)).map((currency) => ({
+      currency,
+      ...byCurrency.get(currency)!,
+    })),
+    mxn,
+    overdueCount,
+  }
 }

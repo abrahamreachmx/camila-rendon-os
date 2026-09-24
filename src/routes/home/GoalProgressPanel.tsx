@@ -41,13 +41,15 @@ export function GoalProgressPanel({
   )
 }
 
-function GoalCell({
+/** Una meta con su barra. Reportes la usa sola para el año. */
+export function GoalCell({
   title,
   goals,
   range,
   actual,
   today,
   noun,
+  showProjection = false,
 }: {
   title: string
   goals: SalesGoal[]
@@ -55,6 +57,8 @@ function GoalCell({
   actual: number
   today: IsoDate
   noun: string
+  /** Proyección lineal al cierre: útil en el año, ruido en un mes que apenas empieza. */
+  showProjection?: boolean
 }) {
   const target = targetForRange(goals, range)
 
@@ -127,6 +131,12 @@ function GoalCell({
               ? `Faltan ${formatMoney(p.remaining, 'MXN')} · vas ${formatMoney(p.actual - p.expectedToDate, 'MXN')} arriba del ritmo.`
               : `Faltan ${formatMoney(p.remaining, 'MXN')} · ${formatMoney(p.paceNeeded, 'MXN')} diarios para cerrar ${noun}.`}
       </p>
+
+      {showProjection && !closed && !reached && p.daysElapsed > 0 && (
+        <p className="mt-1 text-[13px] text-ink-muted">
+          Al ritmo actual {noun} cerraría en {formatMoney(p.projected, 'MXN')}.
+        </p>
+      )}
     </div>
   )
 }

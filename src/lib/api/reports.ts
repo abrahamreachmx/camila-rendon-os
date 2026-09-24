@@ -17,7 +17,7 @@ export async function listReports(): Promise<SavedReport[]> {
 }
 
 export async function saveReport(input: {
-  period_type: 'mes' | 'trimestre' | 'rango'
+  period_type: 'mes' | 'trimestre' | 'anio' | 'rango'
   period_start: IsoDate
   period_end: IsoDate
   title: string

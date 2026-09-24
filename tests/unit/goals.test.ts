@@ -7,7 +7,7 @@ import {
   targetForRange,
   type SalesGoal,
 } from '@/lib/goals'
-import { customRange, monthRange, quarterRange } from '@/lib/periods'
+import { customRange, monthRange, quarterRange, yearRange } from '@/lib/periods'
 
 const METAS: SalesGoal[] = [{ year: 2026, target_net_mxn: 3_600_000 }]
 
@@ -37,6 +37,11 @@ describe('targetForRange', () => {
 
   it('toma la meta trimestral para un trimestre', () => {
     expect(targetForRange(METAS, quarterRange(2026, 3))).toBe(900_000)
+  })
+
+  it('toma la meta completa para el año', () => {
+    expect(targetForRange(METAS, yearRange(2026))).toBe(3_600_000)
+    expect(targetForRange(METAS, yearRange(2027))).toBeNull()
   })
 
   it('devuelve null si el año no tiene meta capturada', () => {

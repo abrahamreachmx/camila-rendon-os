@@ -47,7 +47,7 @@ export function goalForYear(goals: readonly SalesGoal[], year: number): SalesGoa
 }
 
 /**
- * La meta que corresponde a un periodo. Mes y trimestre nunca cruzan año.
+ * La meta que corresponde a un periodo. Mes, trimestre y año nunca cruzan año.
  * Un rango libre no se prorratea: devuelve null y la interfaz no muestra meta.
  */
 export function targetForRange(goals: readonly SalesGoal[], range: PeriodRange): number | null {
@@ -55,6 +55,7 @@ export function targetForRange(goals: readonly SalesGoal[], range: PeriodRange):
   const year = Number(range.from.slice(0, 4))
   const goal = goalForYear(goals, year)
   if (!goal) return null
+  if (range.type === 'anio') return goal.target_net_mxn > 0 ? round2(goal.target_net_mxn) : 0
   return range.type === 'mes'
     ? monthlyTarget(goal.target_net_mxn)
     : quarterlyTarget(goal.target_net_mxn)

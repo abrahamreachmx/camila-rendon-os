@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { updateCampaign } from '@/lib/api/campaigns'
 import { formatDateLong } from '@/lib/dates'
-import type { Currency } from '@/lib/money'
+import { formatMoney, round2, sumBy, type Currency } from '@/lib/money'
 import type { CampaignWithRelations } from '@/types'
 
 export function CampaignSummaryTab({
@@ -20,14 +20,26 @@ export function CampaignSummaryTab({
 }) {
   const [fields, setFields] = useState<CampaignFields>(toFields(campaign))
   const [net, setNet] = useState(String(campaign.net_amount))
+  const [gross, setGross] = useState(String(campaign.gross_amount))
 
   useEffect(() => {
     setFields(toFields(campaign))
     setNet(String(campaign.net_amount))
+    setGross(String(campaign.gross_amount))
   }, [campaign])
 
+  // Lo que darían los servicios si el bruto no se hubiera capturado a mano.
+  const itemsTotal = sumBy(campaign.items, (item) => Number(item.line_total))
+  const grossChanged = round2(Number(gross)) !== round2(Number(campaign.gross_amount))
+
   const save = useMutation({
-    mutationFn: () => updateCampaign(campaign.id, { ...fields, net_amount: Number(net) }),
+    mutationFn: () =>
+      updateCampaign(campaign.id, {
+        ...fields,
+        net_amount: Number(net),
+        // Sólo se marca manual si Ana de verdad movió el bruto.
+        ...(grossChanged ? { gross_amount: Number(gross), gross_manual: true } : {}),
+      }),
     onSuccess: () => { onSaved(); toast.success('Campaña actualizada.') },
     onError: (error: Error) => toast.error(error.message),
   })
@@ -62,13 +74,32 @@ export function CampaignSummaryTab({
       </div>
 
       <div className="rounded-lg border border-line bg-surface p-5">
-        <div className="mb-5 max-w-[260px] space-y-2">
-          <Label htmlFor="net-amount">Neto negociado ({campaign.currency as Currency})</Label>
-          <Input id="net-amount" type="number" min="0" step="0.01" value={net}
-            onChange={(event) => setNet(event.target.value)} />
-          <p className="text-[13px] text-ink-muted">
-            El bruto lo calculan los servicios. El neto se edita cuando hay descuento.
-          </p>
+        <div className="mb-5 grid max-w-[560px] gap-5 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="gross-amount">Bruto ({campaign.currency as Currency})</Label>
+            <Input id="gross-amount" type="number" min="0" step="0.01" value={gross}
+              onChange={(event) => setGross(event.target.value)} />
+            <p className="text-[13px] text-ink-muted">
+              {campaign.gross_manual
+                ? 'Capturado a mano, con el IVA y las retenciones del país.'
+                : 'Hoy es la suma de los servicios. Cámbialo si lleva IVA o retenciones.'}
+            </p>
+            {campaign.gross_manual && campaign.items.length > 0 && (
+              <Button variant="link" size="sm" className="h-auto px-0"
+                disabled={toggle.isPending}
+                onClick={() => toggle.mutate({ gross_manual: false, gross_amount: itemsTotal })}>
+                Volver a la suma de servicios ({formatMoney(itemsTotal, campaign.currency as Currency)})
+              </Button>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="net-amount">Neto negociado ({campaign.currency as Currency})</Label>
+            <Input id="net-amount" type="number" min="0" step="0.01" value={net}
+              onChange={(event) => setNet(event.target.value)} />
+            <p className="text-[13px] text-ink-muted">
+              La base de la comisión y del plan de cobros. Se edita cuando hay descuento.
+            </p>
+          </div>
         </div>
 
         <CampaignFieldsForm value={fields} onChange={(patch) => setFields({ ...fields, ...patch })} showStatus={false} />
