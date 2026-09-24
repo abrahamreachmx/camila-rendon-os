@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { updateCampaign } from '@/lib/api/campaigns'
 import { formatDateLong } from '@/lib/dates'
 import { formatMoney, round2, sumBy, type Currency } from '@/lib/money'
+import { grossFor } from '@/lib/taxes'
 import type { CampaignWithRelations } from '@/types'
 
 export function CampaignSummaryTab({
@@ -30,6 +31,8 @@ export function CampaignSummaryTab({
 
   // Lo que darían los servicios si el bruto no se hubiera capturado a mano.
   const itemsTotal = sumBy(campaign.items, (item) => Number(item.line_total))
+  const isMxn = campaign.currency === 'MXN'
+  const autoGross = isMxn ? grossFor(Number(campaign.net_amount), 'MXN') : itemsTotal
   const grossChanged = round2(Number(gross)) !== round2(Number(campaign.gross_amount))
 
   const save = useMutation({
@@ -81,14 +84,18 @@ export function CampaignSummaryTab({
               onChange={(event) => setGross(event.target.value)} />
             <p className="text-[13px] text-ink-muted">
               {campaign.gross_manual
-                ? 'Capturado a mano, con el IVA y las retenciones del país.'
-                : 'Hoy es la suma de los servicios. Cámbialo si lleva IVA o retenciones.'}
+                ? 'Fijo: capturado a mano o histórico. Los cambios al neto no lo mueven.'
+                : isMxn
+                  ? 'Se calcula solo: neto + IVA 16 % − retención ISR 1.25 % (RESICO).'
+                  : 'Hoy es la suma de los servicios. Cámbialo si lleva impuestos del país.'}
             </p>
-            {campaign.gross_manual && campaign.items.length > 0 && (
+            {campaign.gross_manual && (isMxn || campaign.items.length > 0) && (
               <Button variant="link" size="sm" className="h-auto px-0"
                 disabled={toggle.isPending}
-                onClick={() => toggle.mutate({ gross_manual: false, gross_amount: itemsTotal })}>
-                Volver a la suma de servicios ({formatMoney(itemsTotal, campaign.currency as Currency)})
+                // En pesos el trigger recalcula el bruto al apagar el manual.
+                onClick={() => toggle.mutate({ gross_manual: false, gross_amount: autoGross })}>
+                {isMxn ? 'Volver al cálculo automático' : 'Volver a la suma de servicios'}{' '}
+                ({formatMoney(autoGross, campaign.currency as Currency)})
               </Button>
             )}
           </div>
@@ -97,7 +104,9 @@ export function CampaignSummaryTab({
             <Input id="net-amount" type="number" min="0" step="0.01" value={net}
               onChange={(event) => setNet(event.target.value)} />
             <p className="text-[13px] text-ink-muted">
-              La base de la comisión y del plan de cobros. Se edita cuando hay descuento.
+              {isMxn
+                ? 'El subtotal de la factura y la base de la comisión. Se edita cuando hay descuento.'
+                : 'La base de la comisión y del plan de cobros. Se edita cuando hay descuento.'}
             </p>
           </div>
         </div>
