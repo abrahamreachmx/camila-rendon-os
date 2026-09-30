@@ -14,12 +14,14 @@ import { getSignedUrl } from '@/lib/api/invoices'
 import { deleteReport, getReportSummary, listReports, readSnapshot, saveReport } from '@/lib/api/reports'
 import { getSettings, readSalesGoals } from '@/lib/api/settings'
 import { calcCommission } from '@/lib/commission'
+import type { KpiKey } from '@/lib/kpiBreakdown'
 import { goalForYear, monthlyTarget } from '@/lib/goals'
 import { downloadCsv, toCsv, type CsvColumn } from '@/lib/csv'
 import { formatDateLong, formatDateShort, todayIso } from '@/lib/dates'
 import { formatMoney, toMxn, type Currency } from '@/lib/money'
 import { currentMonth, previousRange, type PeriodRange } from '@/lib/periods'
 import { GoalCell } from '@/routes/home/GoalProgressPanel'
+import { KpiBreakdown } from '@/routes/reports/KpiBreakdown'
 import { KpiGrid } from '@/routes/reports/KpiGrid'
 import { PeriodPicker } from '@/routes/reports/PeriodPicker'
 import { CollectionsChart, MonthlySalesChart, TopCompaniesChart } from '@/routes/reports/ReportCharts'
@@ -29,6 +31,7 @@ export default function ReportsPage() {
   const queryClient = useQueryClient()
   const [range, setRange] = useState<PeriodRange>(() => currentMonth())
   const [opened, setOpened] = useState<SavedReport | null>(null)
+  const [kpi, setKpi] = useState<KpiKey | null>(null)
   const previous = previousRange(range)
 
   const { data: live, isPending } = useQuery({
@@ -206,7 +209,17 @@ export default function ReportsPage() {
             </section>
           )}
 
-          <KpiGrid summary={summary} previous={comparison} />
+          {/* Un reporte guardado es un snapshot: su desglose en vivo no cuadraría. */}
+          <KpiGrid summary={summary} previous={comparison} onSelect={opened ? undefined : setKpi} />
+          {!opened && (
+            <KpiBreakdown
+              kpi={kpi}
+              onClose={() => setKpi(null)}
+              summary={summary}
+              campaigns={campaignsInPeriod}
+              periodLabel={range.label}
+            />
+          )}
 
           <div className="grid gap-4 lg:grid-cols-2">
             <MonthlySalesChart data={summary.monthly_sales} monthlyGoal={monthlyGoal} />

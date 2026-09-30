@@ -15,7 +15,7 @@ import { listStatuses } from '@/lib/api/statuses'
 // sin una segunda consulta. Son pocas filas por campaña y el índice ya existe.
 const LIST_SELECT =
   '*, company:companies(id, name), status:campaign_statuses(id, name, color, is_closed), ' +
-  'payments:payment_schedules(amount, status, due_date)'
+  'payments:payment_schedules(id, amount, status, due_date)'
 
 export async function listCampaigns(
   filters: {

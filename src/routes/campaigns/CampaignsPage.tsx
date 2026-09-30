@@ -6,14 +6,11 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { DataTable, type Column } from '@/components/data/DataTable'
 import { EditableMoneyCell } from '@/components/data/EditableMoneyCell'
 import { EditableTextCell } from '@/components/data/EditableTextCell'
+import { CollectionCell } from '@/routes/campaigns/CollectionCell'
 import { EmptyState } from '@/components/data/EmptyState'
 import { LoadingRows } from '@/components/data/LoadingRows'
 import { MoneyCell } from '@/components/data/MoneyCell'
-import {
-  COLLECTION_STATUS_STYLE,
-  PAYMENT_STATUS_STYLE,
-  StatusBadge,
-} from '@/components/data/StatusBadge'
+import { StatusBadge } from '@/components/data/StatusBadge'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -207,18 +204,7 @@ export default function CampaignsPage() {
       header: 'Cobro',
       hideOnMobile: true,
       sortValue: (row) => collectionSortValue(collection.get(row.id)!),
-      cell: (row) => {
-        const c = collection.get(row.id)!
-        const style = COLLECTION_STATUS_STYLE[c.status]
-        // Lo vencido se distingue por color y por palabra: sólo por color sería
-        // información inaccesible para quien no distingue el rojo.
-        const label =
-          c.status === 'parcial'
-            ? `Parcial · ${c.paidPct} %${c.hasOverdue ? ' · vencido' : ''}`
-            : style.label
-        const color = c.hasOverdue ? PAYMENT_STATUS_STYLE.vencido.color : style.color
-        return <StatusBadge label={label} color={color} />
-      },
+      cell: (row) => <CollectionCell campaign={row} collection={collection.get(row.id)!} />,
     },
     {
       key: 'gross',
