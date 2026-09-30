@@ -81,6 +81,20 @@ export async function updatePayment(id: string, patch: Update<'payment_schedules
   return unwrap(await supabase.from('payment_schedules').update(next).eq('id', id).select('*').single())
 }
 
+/**
+ * Cambia de un golpe el estatus de todos los cobros de una campaña, desde la
+ * tabla de campañas. Sólo toca los que están en otro estatus: un cobro que ya
+ * estaba pagado conserva la fecha en que se pagó.
+ */
+export async function setCampaignPaymentsStatus(campaignId: string, status: PaymentStatus): Promise<void> {
+  const { error } = await supabase
+    .from('payment_schedules')
+    .update({ status, paid_at: status === 'pagado' ? todayIso() : null })
+    .eq('campaign_id', campaignId)
+    .neq('status', status)
+  if (error) throw fromSupabaseError(error)
+}
+
 export async function deletePayment(id: string): Promise<void> {
   const { error } = await supabase.from('payment_schedules').delete().eq('id', id)
   if (error) throw fromSupabaseError(error)

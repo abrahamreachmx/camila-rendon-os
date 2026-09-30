@@ -40,7 +40,7 @@ export type CampaignWithRelations = Campaign & {
 }
 
 /** Lo mínimo de un cobro para resumir el estatus de cobro de una campaña. */
-export type PaymentBrief = Pick<Payment, 'amount' | 'status' | 'due_date'>
+export type PaymentBrief = Pick<Payment, 'id' | 'amount' | 'status' | 'due_date'>
 
 export type CampaignListRow = Campaign & {
   company: Pick<Company, 'id' | 'name'> | null
