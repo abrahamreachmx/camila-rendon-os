@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useSession } from '@/lib/auth'
+import { signInErrorMessage } from '@/lib/errors'
 import { appUrl, supabase } from '@/lib/supabase'
 
 type Mode = 'signIn' | 'forgot' | 'recovery'
@@ -34,7 +35,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setBusy(false)
     if (error) {
-      toast.error('No pudimos entrar. Revisa el correo y la contraseña.')
+      toast.error(signInErrorMessage(error))
       return
     }
   }
