@@ -18,6 +18,8 @@ export type HomeData = {
   dueThisMonthMxn: number
   /** Comisión aún no pagada sobre lo que entra este mes. */
   pendingCommissionMxn: number
+  /** Los cobros del mes que dan esas dos cifras; el desglose de comisiones sale de aquí. */
+  monthPayments: PaymentWithCampaign[]
   contentDue: CampaignListRow[]
   publishing: CampaignListRow[]
   inApproval: { statusName: string; campaigns: CampaignListRow[] }
@@ -56,6 +58,7 @@ export async function getHomeData(): Promise<HomeData> {
     overdueMxn: sumMxn(overduePayments),
     dueThisMonthMxn: month.mxn.pending,
     pendingCommissionMxn: month.commissionPendingMxn,
+    monthPayments: monthDue,
     contentDue: campaigns
       .filter(
         (campaign) =>

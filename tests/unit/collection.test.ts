@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { campaignPaymentStatus, collectionSortValue, summarizeMonthIncome } from '@/lib/collection'
+import { campaignPaymentStatus, collectionSortValue, commissionByCampaign, summarizeMonthIncome } from '@/lib/collection'
 import type { PaymentBrief, PaymentWithCampaign } from '@/types'
 
 const HOY = '2026-09-21'
@@ -231,5 +231,51 @@ describe('summarizeMonthIncome', () => {
     // 3 % de 10,000 + 3 % de 1,000 USD × 18.5 + 3 % de 5,000.
     expect(r.commissionMxn).toBe(300 + 555 + 150)
     expect(r.commissionPendingMxn).toBe(300 + 555)
+  })
+})
+
+describe('commissionByCampaign', () => {
+  function cobro(campaign: Partial<PaymentWithCampaign['campaign']> & { id: string }, amount: number) {
+    return {
+      id: String(Math.random()),
+      amount,
+      status: 'pendiente',
+      due_date: '2026-10-30',
+      campaign: {
+        name: campaign.id.toUpperCase(), currency: 'MXN', fx_rate_mxn: 1, company: { id: 'm', name: 'Marca' },
+        net_amount: 10_000, commission_pct: 3, commission_paid: false, plan: [{ amount: 5_000 }, { amount: 5_000 }],
+        ...campaign,
+      },
+    } as PaymentWithCampaign
+  }
+
+  const pagos = [
+    cobro({ id: 'a' }, 5_000),
+    cobro({ id: 'a' }, 5_000),
+    cobro({ id: 'b', currency: 'USD', fx_rate_mxn: 18.5, net_amount: 1_000, plan: [{ amount: 1_000 }] }, 1_000),
+    cobro({ id: 'c', commission_paid: true, net_amount: 50_000, plan: [{ amount: 50_000 }] }, 50_000),
+  ]
+
+  it('agrupa los cobros de una misma campaña y convierte a pesos', () => {
+    const r = commissionByCampaign(pagos)
+    const a = r.rows.find((row) => row.campaignId === 'a')!
+    expect(a.payments).toBe(2)
+    expect(a.amount).toBe(300)
+    const b = r.rows.find((row) => row.campaignId === 'b')!
+    expect(b.amount).toBe(30)
+    expect(b.amountMxn).toBe(555)
+  })
+
+  it('pone las pendientes primero y de mayor a menor', () => {
+    expect(commissionByCampaign(pagos).rows.map((row) => row.campaignId)).toEqual(['b', 'a', 'c'])
+  })
+
+  it('sus totales cuadran al centavo con el resumen del mes', () => {
+    const r = commissionByCampaign(pagos)
+    const resumen = summarizeMonthIncome(pagos, HOY)
+    expect(r.totalMxn).toBe(resumen.commissionMxn)
+    expect(r.pendingMxn).toBe(resumen.commissionPendingMxn)
+    expect(r.totalMxn).toBe(300 + 555 + 1_500)
+    expect(r.pendingMxn).toBe(855)
   })
 })

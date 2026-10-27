@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 import { EmptyState } from '@/components/data/EmptyState'
 import { LoadingRows } from '@/components/data/LoadingRows'
+import { CommissionBreakdownSheet } from '@/components/data/CommissionBreakdownSheet'
 import { MonthlyIncomeSummary } from '@/components/data/MonthlyIncomeSummary'
 import { PaymentsCalendar } from '@/components/data/PaymentsCalendar'
 import { StatusBadge } from '@/components/data/StatusBadge'
@@ -30,6 +31,7 @@ export default function HomePage() {
   const month = Number(params.get('mes') ?? now.getMonth() + 1)
   const range = monthRange(year, month)
   const view = params.get('vista') === 'resumen' ? 'resumen' : 'calendario'
+  const [commissionsOpen, setCommissionsOpen] = useState(false)
 
   const { data, isPending } = useQuery({ queryKey: ['home'], queryFn: getHomeData })
   const { data: payments = [] } = useQuery({
@@ -160,10 +162,18 @@ export default function HomePage() {
         <KpiTile
           label="Comisiones pendientes"
           value={formatMoney(data.pendingCommissionMxn, 'MXN')}
-          hint="Sobre lo que entra este mes"
-          to="/?vista=resumen"
+          hint="Sobre lo que entra este mes · ver desglose"
+          onClick={() => setCommissionsOpen(true)}
         />
       </div>
+
+      <CommissionBreakdownSheet
+        open={commissionsOpen}
+        onClose={() => setCommissionsOpen(false)}
+        payments={data.monthPayments}
+        monthLabel={thisMonth.label}
+        focus="pendiente"
+      />
 
       {settings && report && (
         <GoalProgressPanel
@@ -201,19 +211,17 @@ export default function HomePage() {
 }
 
 function KpiTile({
-  label, value, hint, tone = 'neutral', to,
+  label, value, hint, tone = 'neutral', to, onClick,
 }: {
   label: string
   value: string
   hint: string
   tone?: 'neutral' | 'overdue'
-  to: string
-}) {
-  return (
-    <Link
-      to={to}
-      className="group rounded-lg border border-line bg-surface px-4 py-4 transition-colors hover:border-plum"
-    >
+} & ({ to: string; onClick?: never } | { onClick: () => void; to?: never })) {
+  const className =
+    'group rounded-lg border border-line bg-surface px-4 py-4 text-left transition-colors hover:border-plum'
+  const body = (
+    <>
       <p className="text-[13px] text-ink-muted">{label}</p>
       <p
         className={cn(
@@ -227,6 +235,19 @@ function KpiTile({
         {hint}
         <ArrowRight className="size-3.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
       </p>
+    </>
+  )
+  // Una tarjeta que abre un panel es un botón, no un enlace: no cambia de página.
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className} aria-haspopup="dialog">
+        {body}
+      </button>
+    )
+  }
+  return (
+    <Link to={to} className={className}>
+      {body}
     </Link>
   )
 }
