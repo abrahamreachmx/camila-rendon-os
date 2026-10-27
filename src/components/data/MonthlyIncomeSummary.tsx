@@ -8,8 +8,9 @@ import { formatMoney, type Currency } from '@/lib/money'
 import type { PaymentStatus, PaymentWithCampaign } from '@/types'
 
 /**
- * Lo que debe entrar en el mes, marca por marca. Una fila por cobro: si una
- * campaña tiene dos pagos en el mes, salen los dos con su fecha.
+ * El dinero que entra en el mes, marca por marca: lo pagado en el mes y lo que
+ * falta cobrar con fecha hasta su fin (los vencidos de antes se arrastran). Una
+ * fila por cobro: si una campaña tiene dos pagos en el mes, salen los dos.
  */
 export function MonthlyIncomeSummary({
   payments,
@@ -40,8 +41,9 @@ export function MonthlyIncomeSummary({
       header: 'Fecha',
       align: 'right',
       hideOnMobile: true,
-      sortValue: (row) => row.due_date,
-      cell: (row) => formatDateShort(row.due_date),
+      // Lo cobrado, en el día que entró; lo pendiente, en su vencimiento.
+      sortValue: (row) => shownDate(row),
+      cell: (row) => formatDateShort(shownDate(row)),
     },
     {
       key: 'amount',
@@ -63,7 +65,7 @@ export function MonthlyIncomeSummary({
   ]
 
   if (payments.length === 0) {
-    return <EmptyState message={`Sin cobros programados en ${monthLabel.toLowerCase()}.`} />
+    return <EmptyState message={`Nada por cobrar ni cobrado en ${monthLabel.toLowerCase()}.`} />
   }
 
   return (
@@ -105,10 +107,23 @@ export function MonthlyIncomeSummary({
               </tr>
             )}
           </tbody>
+          <tfoot className="border-t border-line">
+            <tr>
+              <td className="px-4 py-2 font-semibold">Comisión del mes</td>
+              <td className="px-4 py-2 text-right"><Amount value={summary.commissionMxn} currency="MXN" strong /></td>
+              <td className="px-4 py-2 text-right text-[13px] text-ink-muted" colSpan={2}>
+                Por pagar: <Amount value={summary.commissionPendingMxn} currency="MXN" />
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>
   )
+}
+
+function shownDate(row: PaymentWithCampaign): string {
+  return row.status === 'pagado' && row.paid_at ? row.paid_at : row.due_date
 }
 
 /**

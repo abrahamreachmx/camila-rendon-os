@@ -44,12 +44,8 @@ describe('campaignBreakdown', () => {
     expect(reconciles(b, 'net')).toBe(true)
   })
 
-  it('ventas brutas usa el bruto; comisiones, el % del neto por campaña', () => {
+  it('ventas brutas usa el bruto', () => {
     expect(campaignBreakdown(CAMPANAS, 'gross', resumen({})).totalMxn).toBe(133_250)
-    const c = campaignBreakdown(CAMPANAS, 'commissions', resumen({ comm: 3_555 }))
-    expect(c.rows[0].amount).toBe(3_000)
-    expect(c.totalMxn).toBe(3_555)
-    expect(reconciles(c, 'commissions')).toBe(true)
   })
 
   it('ticket promedio y campañas cuadran contra el promedio y el conteo', () => {
@@ -76,5 +72,21 @@ describe('paymentBreakdown', () => {
     expect(b.rows[0].date).toBe('2026-03-05')
     expect(b.totalMxn).toBe(9_000)
     expect(reconciles(b, 'collected')).toBe(true)
+  })
+
+  it('comisiones: cada cobro aporta su parte del % sobre el neto y lleva la fecha en que entró', () => {
+    const plan = [{ amount: 57_375 }, { amount: 57_375 }]
+    const campaign = {
+      id: 'c1', name: 'C', currency: 'MXN', fx_rate_mxn: 1, net_amount: 100_000, commission_pct: 3,
+      commission_paid: false, company: { id: 'x', name: 'M' }, plan,
+    }
+    const pagos = [
+      { id: 'p1', amount: 57_375, status: 'pagado', due_date: '2026-10-30', paid_at: '2026-10-02', campaign },
+      { id: 'p2', amount: 57_375, status: 'pendiente', due_date: '2026-10-30', paid_at: null, campaign },
+    ] as unknown as PaymentWithCampaign[]
+    const b = paymentBreakdown(pagos, 'commissions', resumen({ comm: 3_000 }), () => ({ label: 'x', color: '#000' }), '2026-10-27')
+    expect(b.rows.map((r) => r.amount)).toEqual([1_500, 1_500])
+    expect(b.rows.map((r) => r.date).sort()).toEqual(['2026-10-02', '2026-10-30'])
+    expect(reconciles(b, 'commissions')).toBe(true)
   })
 })

@@ -1,3 +1,4 @@
+import { paymentCommission } from '@/lib/commission'
 import { isOverdue, todayIso, type IsoDate } from '@/lib/dates'
 import { round2, sumBy, toMxn, type Currency } from '@/lib/money'
 import type { PaymentBrief, PaymentWithCampaign } from '@/types'
@@ -116,14 +117,18 @@ export type MonthIncomeSummary = {
   /** Todo consolidado a pesos con el tipo de cambio de cada campaña. */
   mxn: IncomeTotals
   overdueCount: number
+  /** Comisión de la manager sobre lo que entra en el mes, en pesos. */
+  commissionMxn: number
+  /** La parte de esa comisión cuyas campañas aún no la tienen pagada. */
+  commissionPendingMxn: number
 }
 
 const CURRENCY_ORDER: Currency[] = ['MXN', 'USD', 'EUR', 'COP']
 
 /**
- * Totales de lo que debe entrar en un mes: lo esperado, lo ya cobrado y lo que
- * falta. Sale de los mismos cobros que pinta el calendario, así que ambas
- * vistas siempre cuadran.
+ * Totales de lo que entra en un mes: lo esperado, lo ya cobrado y lo que falta,
+ * más la comisión que corresponde a ese dinero. Recibe los cobros de
+ * listMonthPayments: lo pagado en el mes y lo pendiente con fecha hasta su fin.
  */
 export function summarizeMonthIncome(
   payments: readonly PaymentWithCampaign[],
@@ -133,6 +138,8 @@ export function summarizeMonthIncome(
   const byCurrency = new Map<Currency, IncomeTotals>()
   const mxn = empty()
   let overdueCount = 0
+  let commissionMxn = 0
+  let commissionPendingMxn = 0
 
   for (const payment of payments) {
     const currency = payment.campaign.currency as Currency
@@ -152,6 +159,10 @@ export function summarizeMonthIncome(
     }
     if (isOverdue(payment.due_date, payment.status, today)) overdueCount += 1
     byCurrency.set(currency, bucket)
+
+    const commission = toMxn(paymentCommission(payment), Number(payment.campaign.fx_rate_mxn))
+    commissionMxn = round2(commissionMxn + commission)
+    if (!payment.campaign.commission_paid) commissionPendingMxn = round2(commissionPendingMxn + commission)
   }
 
   return {
@@ -161,5 +172,7 @@ export function summarizeMonthIncome(
     })),
     mxn,
     overdueCount,
+    commissionMxn,
+    commissionPendingMxn,
   }
 }

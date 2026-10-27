@@ -116,7 +116,7 @@ function BreakdownTable({
           <thead>
             <tr className="bg-surface-2 text-left text-[12px] font-semibold text-ink-muted">
               <th scope="col" className="px-3 py-2">Marca · campaña</th>
-              {withDate && <th scope="col" className="px-3 py-2 text-right">{kpi === 'collected' ? 'Pagado' : 'Vence'}</th>}
+              {withDate && <th scope="col" className="px-3 py-2 text-right">{kpi === 'collected' ? 'Pagado' : kpi === 'commissions' ? 'Fecha' : 'Vence'}</th>}
               <th scope="col" className="px-3 py-2 text-right">{amountHeader(kpi)}</th>
               {multiCurrency && <th scope="col" className="px-3 py-2 text-right">MXN</th>}
             </tr>
@@ -205,11 +205,11 @@ function criteria(kpi: KpiKey, from: string, to: string, today: string): string 
     case 'collected':
       return `Cobros marcados como pagados ${periodo}, según su fecha de pago.`
     case 'pending':
-      return `Cobros sin pagar que vencen ${periodo}.`
+      return `Cobros sin pagar con fecha hasta el ${formatDateLong(to)}, incluidos los vencidos de periodos anteriores.`
     case 'overdue':
       return `Cobros sin pagar que vencieron antes del ${formatDateLong(to < today ? to : today)}, de cualquier mes.`
     case 'commissions':
-      return 'Comisión de cada campaña cerrada en el periodo: su % sobre el neto.'
+      return `Comisión sobre el dinero que entra: cobros pagados ${periodo} y los pendientes con fecha hasta su fin. Cada cobro lleva su parte del % sobre el neto de la campaña.`
     case 'gross':
       return 'Bruto de las campañas cerradas en el periodo (en pesos, con IVA y retención).'
     case 'avg_ticket':

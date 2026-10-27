@@ -4,8 +4,11 @@ import type { PlanRow } from '@/lib/paymentPlan'
 import { supabase } from '@/lib/supabase'
 import type { Payment, PaymentStatus, PaymentWithCampaign, Update } from '@/types'
 
-const WITH_CAMPAIGN =
-  '*, campaign:campaigns!inner(id, name, currency, fx_rate_mxn, company:companies(id, name))'
+/** El cobro con su campaña, incluido lo necesario para calcular su comisión. */
+export const PAYMENT_WITH_CAMPAIGN =
+  '*, campaign:campaigns!inner(id, name, currency, fx_rate_mxn, net_amount, commission_pct, commission_paid, ' +
+  'company:companies(id, name), plan:payment_schedules(amount))'
+const WITH_CAMPAIGN = PAYMENT_WITH_CAMPAIGN
 
 export async function listPayments(
   filters: { from?: IsoDate; to?: IsoDate; status?: PaymentStatus | null } = {},
@@ -15,6 +18,21 @@ export async function listPayments(
   if (filters.to) query = query.lte('due_date', filters.to)
   if (filters.status) query = query.eq('status', filters.status)
   return unwrap(await query) as unknown as PaymentWithCampaign[]
+}
+
+/**
+ * El dinero que entra en un periodo: lo cobrado en él (por fecha de pago) y
+ * todo lo que falta cobrar con fecha hasta su fin, incluidos los vencidos de
+ * meses anteriores. Un cobro que vence este mes pero se pagó el anterior ya no
+ * entra. Mismo criterio que report_summary (migración 0013).
+ */
+export async function listMonthPayments(from: IsoDate, to: IsoDate): Promise<PaymentWithCampaign[]> {
+  const [paid, unpaid] = await Promise.all([
+    supabase.from('payment_schedules').select(WITH_CAMPAIGN).eq('status', 'pagado').gte('paid_at', from).lte('paid_at', to),
+    supabase.from('payment_schedules').select(WITH_CAMPAIGN).neq('status', 'pagado').lte('due_date', to),
+  ])
+  const rows = [...unwrap(paid), ...unwrap(unpaid)] as unknown as PaymentWithCampaign[]
+  return rows.sort((a, b) => a.due_date.localeCompare(b.due_date))
 }
 
 /** Todo lo que sigue sin cobrarse y ya venció. */

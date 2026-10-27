@@ -1,4 +1,4 @@
-import { calcCommission } from '@/lib/commission'
+import { paymentCommission } from '@/lib/commission'
 import { isOverdue, todayIso, type IsoDate } from '@/lib/dates'
 import { round2, toMxn, type Currency } from '@/lib/money'
 import type { CampaignListRow, PaymentWithCampaign, ReportSummary } from '@/types'
@@ -14,8 +14,11 @@ export type KpiKey =
   | 'campaigns'
   | 'avg_ticket'
 
-/** Los que se componen de cobros; el resto, de las campañas del periodo. */
-export const PAYMENT_KPIS = ['collected', 'pending', 'overdue'] as const
+/**
+ * Los que se componen de cobros; el resto, de las campañas del periodo.
+ * Comisiones va aquí: sale del dinero que entra, no de las campañas cerradas.
+ */
+export const PAYMENT_KPIS = ['collected', 'pending', 'overdue', 'commissions'] as const
 export type PaymentKpi = (typeof PAYMENT_KPIS)[number]
 
 export function isPaymentKpi(kpi: KpiKey): kpi is PaymentKpi {
@@ -75,8 +78,7 @@ export function kpiValue(summary: ReportSummary, kpi: KpiKey): number {
 
 /**
  * Desglose de un indicador de campañas. Ventas netas, Campañas y Ticket
- * promedio se desglosan por neto; Ventas brutas por bruto; Comisiones por la
- * comisión de cada campaña.
+ * promedio se desglosan por neto; Ventas brutas por bruto.
  */
 export function campaignBreakdown(
   campaigns: readonly CampaignListRow[],
@@ -86,12 +88,7 @@ export function campaignBreakdown(
   const rows = campaigns.map((c): BreakdownRow => {
     const currency = c.currency as Currency
     const net = Number(c.net_amount)
-    const amount =
-      kpi === 'gross'
-        ? round2(Number(c.gross_amount))
-        : kpi === 'commissions'
-          ? calcCommission(net, Number(c.commission_pct))
-          : round2(net)
+    const amount = kpi === 'gross' ? round2(Number(c.gross_amount)) : round2(net)
     return {
       id: c.id,
       campaignId: c.id,
@@ -108,7 +105,10 @@ export function campaignBreakdown(
   return finish(rows, kpiValue(summary, kpi))
 }
 
-/** Desglose de Cobrado, Por cobrar o Vencido a partir de los cobros ya filtrados. */
+/**
+ * Desglose de Cobrado, Por cobrar, Vencido o Comisiones a partir de los cobros
+ * ya filtrados. En Comisiones cada cobro aporta su parte de la comisión.
+ */
 export function paymentBreakdown(
   payments: readonly PaymentWithCampaign[],
   kpi: PaymentKpi,
@@ -118,14 +118,15 @@ export function paymentBreakdown(
 ): Breakdown {
   const rows = payments.map((p): BreakdownRow => {
     const currency = p.campaign.currency as Currency
-    const amount = round2(Number(p.amount))
+    const amount = kpi === 'commissions' ? paymentCommission(p) : round2(Number(p.amount))
+    const paidDate = p.status === 'pagado' ? (p.paid_at ?? p.due_date) : p.due_date
     const style = statusStyle(p.status, isOverdue(p.due_date, p.status, today))
     return {
       id: p.id,
       campaignId: p.campaign.id,
       company: p.campaign.company?.name ?? '—',
       campaign: p.campaign.name,
-      date: kpi === 'collected' ? (p.paid_at ?? p.due_date) : p.due_date,
+      date: kpi === 'collected' || kpi === 'commissions' ? paidDate : p.due_date,
       currency,
       amount,
       amountMxn: toMxn(amount, Number(p.campaign.fx_rate_mxn)),

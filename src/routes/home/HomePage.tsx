@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { getHomeData } from '@/lib/api/home'
 import { listPendingDeliverables } from '@/lib/api/deliverables'
-import { listPayments } from '@/lib/api/payments'
+import { listMonthPayments, listPayments } from '@/lib/api/payments'
 import { getReportSummary } from '@/lib/api/reports'
 import { getSettings, readSalesGoals } from '@/lib/api/settings'
 import { formatDateLong, formatDateShort } from '@/lib/dates'
@@ -35,6 +35,14 @@ export default function HomePage() {
   const { data: payments = [] } = useQuery({
     queryKey: ['payments', { from: range.from, to: range.to }],
     queryFn: () => listPayments({ from: range.from, to: range.to }),
+    enabled: view === 'calendario',
+  })
+  // El resumen cuenta el dinero que entra: lo pagado en el mes y lo pendiente
+  // hasta su fin. El calendario sigue pintando cada cobro en su vencimiento.
+  const { data: monthPayments = [] } = useQuery({
+    queryKey: ['payments', 'month', { from: range.from, to: range.to }],
+    queryFn: () => listMonthPayments(range.from, range.to),
+    enabled: view === 'resumen',
   })
 
   // El avance contra la meta: la configuración ya está cacheada en media app y
@@ -129,7 +137,7 @@ export default function HomePage() {
         )}
 
         {view === 'resumen' ? (
-          <MonthlyIncomeSummary payments={payments} monthLabel={range.label} />
+          <MonthlyIncomeSummary payments={monthPayments} monthLabel={range.label} />
         ) : (
           <PaymentsCalendar year={year} month={month} payments={payments} />
         )}
@@ -146,14 +154,14 @@ export default function HomePage() {
         <KpiTile
           label="Por cobrar este mes"
           value={formatMoney(data.dueThisMonthMxn, 'MXN')}
-          hint="Consolidado en pesos"
-          to="/cobros"
+          hint="Vencidos incluidos, en pesos"
+          to="/?vista=resumen"
         />
         <KpiTile
           label="Comisiones pendientes"
           value={formatMoney(data.pendingCommissionMxn, 'MXN')}
-          hint="De campañas sin comisión pagada"
-          to="/campanas"
+          hint="Sobre lo que entra este mes"
+          to="/?vista=resumen"
         />
       </div>
 

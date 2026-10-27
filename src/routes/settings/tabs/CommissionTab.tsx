@@ -35,7 +35,10 @@ export function CommissionTab() {
   if (isPending) return <LoadingRows rows={2} />
 
   const pctNumber = Number(pct)
-  const invalid = !Number.isFinite(pctNumber) || pctNumber < 0 || pctNumber > 100
+  const outOfRange = !Number.isFinite(pctNumber) || pctNumber < 0 || pctNumber > 100
+  // 0.03 no es 3 %: escrito como fracción, la comisión sale cien veces menor.
+  const fraction = !outOfRange && pctNumber > 0 && pctNumber < 1
+  const invalid = outOfRange || fraction
 
   return (
     <div className="max-w-[420px] space-y-5 rounded-lg border border-line bg-surface p-5">
@@ -53,7 +56,10 @@ export function CommissionTab() {
         <p className="text-[13px] text-ink-muted">
           Se aplica a las campañas nuevas. Las que ya existen conservan el porcentaje con el que se crearon.
         </p>
-        {invalid && <p className="text-[13px] text-overdue">Debe ser un número entre 0 y 100.</p>}
+        {outOfRange && <p className="text-[13px] text-overdue">Debe ser un número entre 0 y 100.</p>}
+        {fraction && (
+          <p className="text-[13px] text-overdue">Escribe el porcentaje como número entero: 3 para 3 %.</p>
+        )}
       </div>
 
       <div className="space-y-2">
