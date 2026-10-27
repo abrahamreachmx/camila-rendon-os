@@ -1,11 +1,10 @@
+import { listMonthPayments, PAYMENT_WITH_CAMPAIGN as PAYMENT_SELECT } from '@/lib/api/payments'
+import { summarizeMonthIncome } from '@/lib/collection'
 import { addDaysIso, todayIso, type IsoDate } from '@/lib/dates'
 import { unwrap } from '@/lib/errors'
 import { round2, toMxn } from '@/lib/money'
 import { supabase } from '@/lib/supabase'
 import type { CampaignListRow, PaymentWithCampaign } from '@/types'
-
-const PAYMENT_SELECT =
-  '*, campaign:campaigns!inner(id, name, currency, fx_rate_mxn, company:companies(id, name))'
 
 const CAMPAIGN_SELECT =
   '*, company:companies(id, name), status:campaign_statuses(id, name, color, is_closed)'
@@ -15,7 +14,9 @@ export type HomeData = {
   /** Los cobros vencidos de meses anteriores no caben en la rejilla del mes, se avisan aparte. */
   overduePayments: PaymentWithCampaign[]
   overdueMxn: number
+  /** Lo que falta cobrar con fecha hasta fin de mes, vencidos incluidos. */
   dueThisMonthMxn: number
+  /** Comisión aún no pagada sobre lo que entra este mes. */
   pendingCommissionMxn: number
   contentDue: CampaignListRow[]
   publishing: CampaignListRow[]
@@ -26,6 +27,7 @@ export type HomeData = {
 export async function getHomeData(): Promise<HomeData> {
   const today = todayIso()
   const horizon = addDaysIso(today, 90)
+  const monthStart = `${today.slice(0, 7)}-01`
   const monthEnd = lastDayOfMonth(today)
   const inTwoWeeks = addDaysIso(today, 14)
 
@@ -36,18 +38,13 @@ export async function getHomeData(): Promise<HomeData> {
       .neq('status', 'pagado')
       .lt('due_date', today)
       .order('due_date'),
-    supabase
-      .from('payment_schedules')
-      .select(PAYMENT_SELECT)
-      .neq('status', 'pagado')
-      .gte('due_date', today)
-      .lte('due_date', monthEnd),
+    listMonthPayments(monthStart, monthEnd),
     supabase.from('campaigns').select(CAMPAIGN_SELECT).order('created_at', { ascending: false }),
     supabase.from('campaign_statuses').select('*'),
   ])
 
   const overduePayments = unwrap(overdue) as unknown as PaymentWithCampaign[]
-  const monthPayments = unwrap(monthDue) as unknown as PaymentWithCampaign[]
+  const month = summarizeMonthIncome(monthDue, today)
   const campaigns = unwrap(openCampaigns) as unknown as CampaignListRow[]
   const allStatuses = unwrap(statuses)
 
@@ -57,22 +54,8 @@ export async function getHomeData(): Promise<HomeData> {
     today,
     overduePayments,
     overdueMxn: sumMxn(overduePayments),
-    dueThisMonthMxn: sumMxn(monthPayments),
-    pendingCommissionMxn: round2(
-      campaigns
-        .filter((campaign) => !campaign.commission_paid)
-        .reduce(
-          (acc, campaign) =>
-            round2(
-              acc +
-                toMxn(
-                  round2((Number(campaign.net_amount) * Number(campaign.commission_pct)) / 100),
-                  Number(campaign.fx_rate_mxn),
-                ),
-            ),
-          0,
-        ),
-    ),
+    dueThisMonthMxn: month.mxn.pending,
+    pendingCommissionMxn: month.commissionPendingMxn,
     contentDue: campaigns
       .filter(
         (campaign) =>

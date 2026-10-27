@@ -56,8 +56,13 @@ export type DeliverableWithCampaign = Deliverable & {
 }
 
 export type PaymentWithCampaign = Payment & {
-  campaign: Pick<Campaign, 'id' | 'name' | 'currency' | 'fx_rate_mxn'> & {
+  campaign: Pick<
+    Campaign,
+    'id' | 'name' | 'currency' | 'fx_rate_mxn' | 'net_amount' | 'commission_pct' | 'commission_paid'
+  > & {
     company: Pick<Company, 'id' | 'name'> | null
+    /** Todos los cobros de la campaña: dan el peso de este cobro en la comisión. */
+    plan: Pick<Payment, 'amount'>[]
   }
 }
 

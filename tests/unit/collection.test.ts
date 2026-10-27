@@ -181,7 +181,10 @@ describe('summarizeMonthIncome', () => {
       amount,
       status: 'pendiente',
       due_date: '2026-09-28',
-      campaign: { id: 'c', name: 'C', currency, fx_rate_mxn: fx, company: null },
+      campaign: {
+        id: 'c', name: 'C', currency, fx_rate_mxn: fx, company: null,
+        net_amount: amount, commission_pct: 3, commission_paid: false, plan: [{ amount }],
+      },
       ...patch,
     } as PaymentWithCampaign
   }
@@ -207,6 +210,26 @@ describe('summarizeMonthIncome', () => {
     expect(summarizeMonthIncome([pago(100, 'MXN', 1, { due_date: '2026-09-02' })], HOY).overdueCount).toBe(1)
     expect(summarizeMonthIncome([], HOY)).toEqual({
       byCurrency: [], mxn: { expected: 0, paid: 0, pending: 0 }, overdueCount: 0,
+      commissionMxn: 0, commissionPendingMxn: 0,
     })
+  })
+
+  it('la comisión del mes sale de lo que entra, en pesos, y separa la ya pagada', () => {
+    const r = summarizeMonthIncome(
+      [
+        pago(10_000, 'MXN', 1, { status: 'pagado' }),
+        pago(1_000, 'USD', 18.5),
+        pago(5_000, 'MXN', 1, {
+          campaign: {
+            id: 'd', name: 'D', currency: 'MXN', fx_rate_mxn: 1, company: null,
+            net_amount: 5_000, commission_pct: 3, commission_paid: true, plan: [{ amount: 5_000 }],
+          },
+        }),
+      ],
+      HOY,
+    )
+    // 3 % de 10,000 + 3 % de 1,000 USD × 18.5 + 3 % de 5,000.
+    expect(r.commissionMxn).toBe(300 + 555 + 150)
+    expect(r.commissionPendingMxn).toBe(300 + 555)
   })
 })
