@@ -62,6 +62,23 @@ export function fromSupabaseError(error: unknown, fallback = 'No se pudo complet
   return new AppError('UNKNOWN', message, { cause: error })
 }
 
+/**
+ * Mensaje para un error de `signInWithPassword`. Sólo culpa al correo y la
+ * contraseña cuando Auth respondió que no coinciden: si el servidor no
+ * contesta (p. ej. Supabase pausó el proyecto y el dominio deja de existir),
+ * supabase-js devuelve un AuthRetryableFetchError con status 0, y decir
+ * "revisa tu contraseña" manda a buscar el problema donde no está.
+ */
+export function signInErrorMessage(error: { name?: string; status?: number; code?: string }): string {
+  if (error.name === 'AuthRetryableFetchError' || !error.status || error.status >= 500) {
+    return 'No pudimos conectar con el servidor. Intenta de nuevo en unos minutos.'
+  }
+  if (error.code === 'email_not_confirmed') {
+    return 'Este correo todavía no está confirmado.'
+  }
+  return 'No pudimos entrar. Revisa el correo y la contraseña.'
+}
+
 /** Errores que vale la pena reintentar en vez de mostrar. */
 export function isTransient(error: unknown): boolean {
   return error instanceof AppError && error.code === 'TRANSIENT'
