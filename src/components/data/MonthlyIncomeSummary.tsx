@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { CommissionBreakdownSheet } from '@/components/data/CommissionBreakdownSheet'
 import { DataTable, type Column } from '@/components/data/DataTable'
 import { EmptyState } from '@/components/data/EmptyState'
 import { PAYMENT_STATUS_STYLE, StatusBadge } from '@/components/data/StatusBadge'
@@ -20,6 +22,7 @@ export function MonthlyIncomeSummary({
   monthLabel: string
 }) {
   const navigate = useNavigate()
+  const [commissionsOpen, setCommissionsOpen] = useState(false)
   const today = todayIso()
   const summary = summarizeMonthIncome(payments, today)
 
@@ -111,13 +114,31 @@ export function MonthlyIncomeSummary({
             <tr>
               <td className="px-4 py-2 font-semibold">Comisión del mes</td>
               <td className="px-4 py-2 text-right"><Amount value={summary.commissionMxn} currency="MXN" strong /></td>
-              <td className="px-4 py-2 text-right text-[13px] text-ink-muted" colSpan={2}>
+              <td className="px-4 py-2 text-right text-[13px] text-ink-muted">
                 Por pagar: <Amount value={summary.commissionPendingMxn} currency="MXN" />
+              </td>
+              <td className="px-4 py-2 text-right">
+                <button
+                  type="button"
+                  onClick={() => setCommissionsOpen(true)}
+                  aria-haspopup="dialog"
+                  className="text-[13px] font-semibold text-plum underline underline-offset-2 hover:no-underline"
+                >
+                  Ver desglose
+                </button>
               </td>
             </tr>
           </tfoot>
         </table>
       </div>
+
+      <CommissionBreakdownSheet
+        open={commissionsOpen}
+        onClose={() => setCommissionsOpen(false)}
+        payments={payments}
+        monthLabel={monthLabel}
+        focus="todas"
+      />
     </div>
   )
 }

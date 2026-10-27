@@ -176,3 +176,64 @@ export function summarizeMonthIncome(
     commissionPendingMxn,
   }
 }
+
+export type CampaignCommissionRow = {
+  campaignId: string
+  company: string
+  campaign: string
+  currency: Currency
+  pct: number
+  /** Cuántos de sus cobros entran en el mes. */
+  payments: number
+  /** En la moneda de la campaña. */
+  amount: number
+  amountMxn: number
+  paid: boolean
+}
+
+export type CampaignCommissions = {
+  /** Pendientes primero; dentro de cada grupo, de mayor a menor en pesos. */
+  rows: CampaignCommissionRow[]
+  totalMxn: number
+  pendingMxn: number
+}
+
+/**
+ * La comisión del mes campaña por campaña, para el desglose del Inicio. Suma
+ * cobro por cobro igual que summarizeMonthIncome, así que sus totales cuadran
+ * al centavo con la tarjeta y con el resumen.
+ */
+export function commissionByCampaign(payments: readonly PaymentWithCampaign[]): CampaignCommissions {
+  const byCampaign = new Map<string, CampaignCommissionRow>()
+  let totalMxn = 0
+  let pendingMxn = 0
+
+  for (const payment of payments) {
+    const { campaign } = payment
+    const amount = paymentCommission(payment)
+    const amountMxn = toMxn(amount, Number(campaign.fx_rate_mxn))
+    const row = byCampaign.get(campaign.id) ?? {
+      campaignId: campaign.id,
+      company: campaign.company?.name ?? '—',
+      campaign: campaign.name,
+      currency: campaign.currency as Currency,
+      pct: Number(campaign.commission_pct),
+      payments: 0,
+      amount: 0,
+      amountMxn: 0,
+      paid: Boolean(campaign.commission_paid),
+    }
+    row.payments += 1
+    row.amount = round2(row.amount + amount)
+    row.amountMxn = round2(row.amountMxn + amountMxn)
+    byCampaign.set(campaign.id, row)
+
+    totalMxn = round2(totalMxn + amountMxn)
+    if (!row.paid) pendingMxn = round2(pendingMxn + amountMxn)
+  }
+
+  const rows = [...byCampaign.values()].sort(
+    (a, b) => Number(a.paid) - Number(b.paid) || b.amountMxn - a.amountMxn,
+  )
+  return { rows, totalMxn, pendingMxn }
+}
