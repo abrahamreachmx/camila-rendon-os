@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { CommissionBreakdownSheet } from '@/components/data/CommissionBreakdownSheet'
 import { DataTable, type Column } from '@/components/data/DataTable'
@@ -110,27 +111,28 @@ export function MonthlyIncomeSummary({
               </tr>
             )}
           </tbody>
-          <tfoot className="border-t border-line">
-            <tr>
-              <td className="px-4 py-2 font-semibold">Comisión del mes</td>
-              <td className="px-4 py-2 text-right"><Amount value={summary.commissionMxn} currency="MXN" strong /></td>
-              <td className="px-4 py-2 text-right text-[13px] text-ink-muted">
-                Por pagar: <Amount value={summary.commissionPendingMxn} currency="MXN" />
-              </td>
-              <td className="px-4 py-2 text-right">
-                <button
-                  type="button"
-                  onClick={() => setCommissionsOpen(true)}
-                  aria-haspopup="dialog"
-                  className="text-[13px] font-semibold text-plum underline underline-offset-2 hover:no-underline"
-                >
-                  Ver desglose
-                </button>
-              </td>
-            </tr>
-          </tfoot>
         </table>
       </div>
+
+      {/* Fuera de la tabla a propósito: en celular la tabla se desliza de lado
+          y el acceso al desglose quedaba escondido a la derecha. */}
+      <button
+        type="button"
+        onClick={() => setCommissionsOpen(true)}
+        aria-haspopup="dialog"
+        className="group flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border border-line bg-surface px-4 py-3 text-left transition-colors hover:border-plum"
+      >
+        <span>
+          <span className="block text-[13px] text-ink-muted">Comisión del mes</span>
+          <Amount value={summary.commissionMxn} currency="MXN" strong />
+          <span className="ml-2 text-[13px] text-ink-muted">
+            Por pagar: <Amount value={summary.commissionPendingMxn} currency="MXN" />
+          </span>
+        </span>
+        <span className="flex items-center gap-1 text-[13px] font-semibold text-plum">
+          Ver desglose <ArrowRight className="size-3.5" aria-hidden />
+        </span>
+      </button>
 
       <CommissionBreakdownSheet
         open={commissionsOpen}
